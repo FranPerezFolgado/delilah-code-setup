@@ -45,21 +45,43 @@ Delegate to the `code-researcher` subagent to identify which parts of the codeba
 
 Show the user a brief map of affected files/modules before continuing. This feeds context into spec-kit.
 
-### 4. Ask three questions using the AskUserQuestion tool
+### 4. Ask three questions
 
-Use the AskUserQuestion tool to present all three questions at once with predefined options:
+Call the AskUserQuestion tool with exactly these parameters:
 
-**Question 1 — Output format**
-- `markdown` — only .md files in specs/
-- `html` — HTML reports + .md files
-
-**Question 2 — Auto branch**
-- `yes` — create feature/<name> branch automatically
-- `no` — local only, no branch created
-
-**Question 3 — Scope**
-- `lean` — specify → plan (fast, good for exploration)
-- `full` — specify → clarify → checklist → plan → tasks (production-ready)
+```json
+{
+  "questions": [
+    {
+      "question": "Output format for spec artefacts?",
+      "header": "Format",
+      "multiSelect": false,
+      "options": [
+        { "label": "markdown", "description": "Only .md files in specs/" },
+        { "label": "html", "description": "HTML reports + .md files" }
+      ]
+    },
+    {
+      "question": "Create a feature branch automatically?",
+      "header": "Branch",
+      "multiSelect": false,
+      "options": [
+        { "label": "yes", "description": "Creates feature/<name> branch" },
+        { "label": "no", "description": "Local only, no branch created" }
+      ]
+    },
+    {
+      "question": "Which phases to run?",
+      "header": "Scope",
+      "multiSelect": false,
+      "options": [
+        { "label": "lean", "description": "specify → plan — fast, good for exploration" },
+        { "label": "full", "description": "specify → clarify → checklist → plan → tasks — production-ready" }
+      ]
+    }
+  ]
+}
+```
 
 ### 5. Initialise spec-kit if missing
 Check if `.specify/` exists in the current directory.
