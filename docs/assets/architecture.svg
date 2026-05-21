@@ -1,0 +1,128 @@
+<svg width="900" height="570" viewBox="0 0 900 570" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <style>
+    text { font-family: system-ui,-apple-system,'Segoe UI',sans-serif; }
+    .h1  { font: 700 22px system-ui,-apple-system,sans-serif; fill: #f1f5f9; }
+    .sub { font: 12px system-ui,-apple-system,sans-serif; fill: #64748b; }
+    .sl  { font: 700 10px system-ui,-apple-system,sans-serif; fill: #94a3b8; letter-spacing: 1px; }
+    .sk  { font: 700 12px system-ui,-apple-system,sans-serif; fill: #ffffff; }
+    .sk2 { font: 700 12px system-ui,-apple-system,sans-serif; }
+    .al  { font: 700 10px system-ui,-apple-system,sans-serif; fill: #94a3b8; letter-spacing: 1px; }
+    .an  { font: 700 12px system-ui,-apple-system,sans-serif; fill: #ffffff; }
+    .ai  { font: 11px system-ui,-apple-system,sans-serif; }
+    .tl  { font: 700 10px system-ui,-apple-system,sans-serif; fill: #94a3b8; letter-spacing: 1px; }
+    .tn  { font: 700 13px system-ui,-apple-system,sans-serif; fill: #ffffff; }
+    .ti  { font: 11px system-ui,-apple-system,sans-serif; }
+    .rl  { font: 700 10px system-ui,-apple-system,sans-serif; fill: #94a3b8; letter-spacing: 1px; }
+    .rn  { font: 700 13px system-ui,-apple-system,sans-serif; fill: #ffffff; }
+    .ri  { font: 11px system-ui,-apple-system,sans-serif; fill: #cbd5e1; }
+    .arr { fill: #94a3b8; }
+  </style>
+  <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 Z" fill="#94a3b8"/>
+  </marker>
+</defs>
+
+<!-- Background -->
+<rect width="900" height="570" fill="#0d0d14"/>
+
+<!-- Header -->
+<text x="40" y="36" class="h1">How it all connects</text>
+<text x="40" y="56" class="sub">Skills delegate to agents. Agents query tools. RTK filters every shell command transparently.</text>
+
+<!-- ═══════════════════ SKILLS ROW ═══════════════════ -->
+<text x="40" y="86" class="sl">SKILLS  —  ENTRY POINTS</text>
+
+<!-- Skill chips -->
+<!-- /recall -->
+<rect x="40" y="92" width="84" height="32" rx="6" fill="#4c1d95"/>
+<text x="82" y="113" text-anchor="middle" class="sk">/recall</text>
+<!-- /feature -->
+<rect x="132" y="92" width="90" height="32" rx="6" fill="#4c1d95"/>
+<text x="177" y="113" text-anchor="middle" class="sk">/feature</text>
+<!-- /review -->
+<rect x="230" y="92" width="84" height="32" rx="6" fill="#4c1d95"/>
+<text x="272" y="113" text-anchor="middle" class="sk">/review</text>
+<!-- /pr-review -->
+<rect x="322" y="92" width="100" height="32" rx="6" fill="#4c1d95"/>
+<text x="372" y="113" text-anchor="middle" class="sk">/pr-review</text>
+<!-- /commit -->
+<rect x="430" y="92" width="84" height="32" rx="6" fill="#4c1d95"/>
+<text x="472" y="113" text-anchor="middle" class="sk">/commit</text>
+<!-- /save-session -->
+<rect x="522" y="92" width="118" height="32" rx="6" fill="#4c1d95"/>
+<text x="581" y="113" text-anchor="middle" class="sk">/save-session</text>
+<!-- + more -->
+<rect x="648" y="92" width="76" height="32" rx="6" fill="#1e1b4b" stroke="#4c1d95" stroke-width="1" stroke-dasharray="3,2"/>
+<text x="686" y="113" text-anchor="middle" class="sk2" fill="#7c3aed">+6 more</text>
+
+<!-- Arrows skills → agents -->
+<line x1="350" y1="124" x2="265" y2="156" stroke="#475569" stroke-width="1.2" marker-end="url(#arr)"/>
+<line x1="450" y1="124" x2="615" y2="156" stroke="#475569" stroke-width="1.2" marker-end="url(#arr)"/>
+
+<!-- ═══════════════════ AGENTS ROW ═══════════════════ -->
+<!-- Haiku column -->
+<rect x="40" y="162" width="390" height="175" rx="10" fill="#082f49" stroke="#0891b2" stroke-width="1.5"/>
+<text x="235" y="182" text-anchor="middle" class="al">HAIKU AGENTS  —  LIGHTWEIGHT TASKS</text>
+
+<!-- Haiku agent chips -->
+<rect x="56" y="188" width="130" height="28" rx="5" fill="#0c4a6e"/>
+<text x="121" y="207" text-anchor="middle" class="ai" fill="#7dd3fc">code-researcher</text>
+<rect x="196" y="188" width="112" height="28" rx="5" fill="#0c4a6e"/>
+<text x="252" y="207" text-anchor="middle" class="ai" fill="#7dd3fc">doc-searcher</text>
+<rect x="56" y="224" width="116" height="28" rx="5" fill="#0c4a6e"/>
+<text x="114" y="243" text-anchor="middle" class="ai" fill="#7dd3fc">commit-writer</text>
+<rect x="180" y="224" width="100" height="28" rx="5" fill="#0c4a6e"/>
+<text x="230" y="243" text-anchor="middle" class="ai" fill="#7dd3fc">doc-checker</text>
+<rect x="288" y="224" width="108" height="28" rx="5" fill="#0c4a6e"/>
+<text x="342" y="243" text-anchor="middle" class="ai" fill="#7dd3fc">test-reviewer</text>
+
+<!-- Haiku label -->
+<rect x="56" y="262" width="358" height="22" rx="4" fill="#0e4166"/>
+<text x="235" y="277" text-anchor="middle" class="ai" fill="#38bdf8">claude-haiku-4-5 · fast · low token cost</text>
+
+<!-- Haiku uses description -->
+<text x="56" y="316" class="ai" fill="#7dd3fc">→ /recall, /feature, /commit, /doc-check, /code-nav</text>
+
+<!-- Sonnet column -->
+<rect x="450" y="162" width="410" height="175" rx="10" fill="#431407" stroke="#d97706" stroke-width="1.5"/>
+<text x="655" y="182" text-anchor="middle" class="al" fill="#94a3b8">SONNET AGENTS  —  REASONING TASKS</text>
+
+<rect x="466" y="188" width="136" height="28" rx="5" fill="#7c2d12"/>
+<text x="534" y="207" text-anchor="middle" class="ai" fill="#fdba74">security-reviewer</text>
+<rect x="612" y="188" width="160" height="28" rx="5" fill="#7c2d12"/>
+<text x="692" y="207" text-anchor="middle" class="ai" fill="#fdba74">code-quality-reviewer</text>
+<rect x="466" y="224" width="168" height="28" rx="5" fill="#7c2d12"/>
+<text x="550" y="243" text-anchor="middle" class="ai" fill="#fdba74">architecture-reviewer</text>
+
+<rect x="466" y="262" width="378" height="22" rx="4" fill="#6b2c07"/>
+<text x="655" y="277" text-anchor="middle" class="ai" fill="#fb923c">claude-sonnet-4-6 · deep reasoning · review tasks</text>
+
+<text x="466" y="316" class="ai" fill="#fdba74">→ /review, /pr-review, /save-session (via adr-check)</text>
+
+<!-- Arrows agents → tools -->
+<line x1="235" y1="337" x2="235" y2="365" stroke="#475569" stroke-width="1.2" marker-end="url(#arr)"/>
+<line x1="655" y1="337" x2="655" y2="365" stroke="#475569" stroke-width="1.2" marker-end="url(#arr)"/>
+
+<!-- ═══════════════════ TOOLS ROW ═══════════════════ -->
+<!-- QMD -->
+<rect x="40" y="370" width="390" height="88" rx="10" fill="#052e16" stroke="#16a34a" stroke-width="1.5"/>
+<text x="235" y="390" text-anchor="middle" class="tl" fill="#94a3b8">QMD  —  DOC SEARCH  MCP</text>
+<text x="235" y="413" text-anchor="middle" class="tn">On-device semantic search</text>
+<text x="235" y="432" text-anchor="middle" class="ti" fill="#86efac">Per-project collections · lex + vec + hyde · HTTP daemon</text>
+<text x="235" y="449" text-anchor="middle" class="ti" fill="#4ade80">mcp__qmd__query · get · multi_get · status</text>
+
+<!-- Codegraph -->
+<rect x="450" y="370" width="410" height="88" rx="10" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="655" y="390" text-anchor="middle" class="tl" fill="#94a3b8">CODEGRAPH  —  CODE GRAPH  MCP</text>
+<text x="655" y="413" text-anchor="middle" class="tn" fill="#ffffff">AST-based knowledge graph</text>
+<text x="655" y="432" text-anchor="middle" class="ti" fill="#93c5fd">Tree-sitter · local SQLite · 19+ languages · stdio</text>
+<text x="655" y="449" text-anchor="middle" class="ti" fill="#60a5fa">search · context · callers · callees · impact · node</text>
+
+<!-- ═══════════════════ RTK BAR ═══════════════════ -->
+<rect x="40" y="474" width="820" height="68" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+<text x="450" y="494" text-anchor="middle" class="rl">RTK  —  TRANSPARENT SHELL HOOK</text>
+<text x="450" y="514" text-anchor="middle" class="rn">PreToolUse hook · rewrites every Bash command output before it reaches Claude</text>
+<text x="450" y="532" text-anchor="middle" class="ri">git · ls · grep · test runners · build tools · 100+ commands · 60–90% token reduction</text>
+
+</svg>

@@ -1,0 +1,151 @@
+<svg width="920" height="680" viewBox="0 0 920 680" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <style>
+    text { font-family: system-ui,-apple-system,'Segoe UI',sans-serif; }
+    .h1  { font: 700 22px system-ui,-apple-system,sans-serif; fill: #f1f5f9; }
+    .sub { font: 12px system-ui,-apple-system,sans-serif; fill: #64748b; }
+    .mono{ font-family: 'SF Mono','Fira Code','Courier New',monospace; }
+    .bl  { font: 700 12px system-ui,-apple-system,sans-serif; fill: #ffffff; }
+    .bs  { font: 11px system-ui,-apple-system,sans-serif; fill: #cbd5e1; }
+    .sl  { font: 700 10px system-ui,-apple-system,sans-serif; fill: #94a3b8; letter-spacing: 1px; }
+    .sn  { font: 700 12px system-ui,-apple-system,sans-serif; fill: #ffffff; }
+    .si  { font: 11px system-ui,-apple-system,sans-serif; }
+    .ql  { font: 700 10px system-ui,-apple-system,sans-serif; letter-spacing: 1px; }
+    .qn  { font: 700 12px system-ui,-apple-system,sans-serif; fill: #ffffff; }
+    .qi  { font: 11px system-ui,-apple-system,sans-serif; }
+    .pl  { font: 700 10px system-ui,-apple-system,sans-serif; fill: #94a3b8; letter-spacing: 1px; }
+    .pn  { font: 700 12px system-ui,-apple-system,sans-serif; fill: #0f172a; }
+    .pi  { font: 11px system-ui,-apple-system,sans-serif; fill: #475569; }
+    .ph  { font: 700 11px system-ui,-apple-system,sans-serif; }
+    .ol  { font: 700 10px system-ui,-apple-system,sans-serif; fill: #94a3b8; letter-spacing: 1px; }
+    .on  { font: 700 13px system-ui,-apple-system,sans-serif; fill: #ffffff; }
+    .oi  { font: 11px system-ui,-apple-system,sans-serif; fill: #a3e635; }
+    .par { font: 11px system-ui,-apple-system,sans-serif; fill: #94a3b8; }
+    .lbl { font: 700 11px system-ui,-apple-system,sans-serif; fill: #94a3b8; }
+  </style>
+  <marker id="a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 Z" fill="#475569"/>
+  </marker>
+  <marker id="ag" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 Z" fill="#4ade80"/>
+  </marker>
+</defs>
+
+<!-- Background -->
+<rect width="920" height="680" fill="#0d0d14"/>
+
+<!-- Header -->
+<text x="40" y="36" class="h1">/feature — Feature Development Flow</text>
+<text x="40" y="56" class="sub">Searches for prior art and maps affected code before generating spec and plan.</text>
+
+<!-- ═══ ENTRY ═══ -->
+<rect x="260" y="68" width="400" height="58" rx="8" fill="#1e1b4b" stroke="#7c3aed" stroke-width="2"/>
+<text x="460" y="90" text-anchor="middle" class="bl" font-family="'SF Mono','Fira Code','Courier New',monospace">/feature "add OAuth2 login"</text>
+<text x="460" y="113" text-anchor="middle" class="bs">description passed as argument or prompted</text>
+
+<!-- Arrow down to parallel research -->
+<line x1="460" y1="126" x2="460" y2="148" stroke="#475569" stroke-width="1.5" marker-end="url(#a)"/>
+
+<!-- ═══ PARALLEL RESEARCH ═══ -->
+<text x="460" y="166" text-anchor="middle" class="par">parallel</text>
+<line x1="200" y1="172" x2="720" y2="172" stroke="#475569" stroke-width="1.2"/>
+<line x1="460" y1="148" x2="460" y2="172" stroke="#475569" stroke-width="1.2"/>
+<line x1="200" y1="172" x2="200" y2="185" stroke="#475569" stroke-width="1.2"/>
+<line x1="720" y1="172" x2="720" y2="185" stroke="#475569" stroke-width="1.2"/>
+
+<!-- QMD Search box -->
+<rect x="48" y="185" width="304" height="100" rx="8" fill="#052e16" stroke="#16a34a" stroke-width="1.5"/>
+<text x="200" y="204" text-anchor="middle" class="ql" fill="#4ade80">QMD SEARCH  ·  doc-searcher (Haiku)</text>
+<text x="200" y="222" text-anchor="middle" class="qn">Prior art &amp; context</text>
+<text x="62" y="243" class="qi" fill="#86efac">· Similar features in this project</text>
+<text x="62" y="259" class="qi" fill="#86efac">· Cross-project implementations</text>
+<text x="62" y="275" class="qi" fill="#86efac">· Past session notes, ADRs, decisions</text>
+
+<!-- Code-nav box -->
+<rect x="568" y="185" width="304" height="100" rx="8" fill="#082f49" stroke="#0891b2" stroke-width="1.5"/>
+<text x="720" y="204" text-anchor="middle" class="ql" fill="#38bdf8">CODE-NAV  ·  code-researcher (Haiku)</text>
+<text x="720" y="222" text-anchor="middle" class="qn">Affected code map</text>
+<text x="582" y="243" class="qi" fill="#7dd3fc">· Modules &amp; files likely to change</text>
+<text x="582" y="259" class="qi" fill="#7dd3fc">· Call chains in the feature area</text>
+<text x="582" y="275" class="qi" fill="#7dd3fc">· Dependencies and interfaces</text>
+
+<!-- Converging lines after research -->
+<line x1="200" y1="285" x2="200" y2="305" stroke="#475569" stroke-width="1.2"/>
+<line x1="720" y1="285" x2="720" y2="305" stroke="#475569" stroke-width="1.2"/>
+<line x1="200" y1="305" x2="720" y2="305" stroke="#475569" stroke-width="1.2"/>
+<line x1="460" y1="305" x2="460" y2="318" stroke="#475569" stroke-width="1.5" marker-end="url(#a)"/>
+
+<!-- "present findings" label -->
+<text x="480" y="315" class="lbl">present findings to user</text>
+
+<!-- ═══ QUESTIONS ═══ -->
+<rect x="160" y="324" width="600" height="82" rx="8" fill="#1c1917" stroke="#78716c" stroke-width="1.5"/>
+<text x="460" y="343" text-anchor="middle" class="pl">3 QUESTIONS</text>
+<text x="185" y="365" class="ph" fill="#d97706">Output format</text>
+<text x="185" y="381" class="pi">markdown or html reports</text>
+<text x="390" y="365" class="ph" fill="#d97706">Auto branch</text>
+<text x="390" y="381" class="pi">create feature/&lt;name&gt;?</text>
+<text x="595" y="365" class="ph" fill="#d97706">Scope</text>
+<text x="595" y="381" class="pi">lean or full path</text>
+
+<!-- Arrow to spec-kit fork -->
+<line x1="460" y1="406" x2="460" y2="425" stroke="#475569" stroke-width="1.5" marker-end="url(#a)"/>
+
+<!-- Fork label -->
+<text x="335" y="423" class="lbl">lean</text>
+<text x="550" y="423" class="lbl">full</text>
+<line x1="270" y1="428" x2="650" y2="428" stroke="#475569" stroke-width="1.2"/>
+<line x1="460" y1="425" x2="460" y2="428" stroke="#475569" stroke-width="1.2"/>
+<line x1="270" y1="428" x2="270" y2="442" stroke="#475569" stroke-width="1.2"/>
+<line x1="650" y1="428" x2="650" y2="442" stroke="#475569" stroke-width="1.2"/>
+
+<!-- ═══ LEAN PATH ═══ -->
+<rect x="62" y="442" width="416" height="118" rx="8" fill="#0c0a09" stroke="#44403c" stroke-width="1.5"/>
+<text x="270" y="462" text-anchor="middle" class="sl">LEAN PATH  —  FAST</text>
+
+<!-- specify -->
+<rect x="78" y="470" width="120" height="30" rx="5" fill="#292524"/>
+<text x="138" y="490" text-anchor="middle" class="si" fill="#a8a29e" font-family="'SF Mono','Fira Code','Courier New',monospace">/speckit.specify</text>
+<!-- arrow -->
+<line x1="198" y1="485" x2="218" y2="485" stroke="#78716c" stroke-width="1.2" marker-end="url(#a)"/>
+<!-- plan -->
+<rect x="220" y="470" width="106" height="30" rx="5" fill="#292524"/>
+<text x="273" y="490" text-anchor="middle" class="si" fill="#a8a29e" font-family="'SF Mono','Fira Code','Courier New',monospace">/speckit.plan</text>
+
+<text x="270" y="530" text-anchor="middle" class="si" fill="#78716c">spec.md + plan.md</text>
+<text x="270" y="548" text-anchor="middle" class="si" fill="#57534e">fast exploration path</text>
+
+<!-- ═══ FULL PATH ═══ -->
+<rect x="442" y="442" width="416" height="118" rx="8" fill="#0c0a09" stroke="#44403c" stroke-width="1.5"/>
+<text x="650" y="462" text-anchor="middle" class="sl">FULL PATH  —  PRODUCTION</text>
+
+<!-- specify -->
+<rect x="458" y="470" width="106" height="30" rx="5" fill="#292524"/>
+<text x="511" y="490" text-anchor="middle" class="si" fill="#a8a29e" font-family="'SF Mono','Fira Code','Courier New',monospace">/speckit.specify</text>
+<line x1="564" y1="485" x2="576" y2="485" stroke="#78716c" stroke-width="1.2" marker-end="url(#a)"/>
+<!-- clarify -->
+<rect x="578" y="470" width="96" height="30" rx="5" fill="#292524"/>
+<text x="626" y="490" text-anchor="middle" class="si" fill="#a8a29e" font-family="'SF Mono','Fira Code','Courier New',monospace">/speckit.clarify</text>
+<line x1="674" y1="485" x2="684" y2="485" stroke="#78716c" stroke-width="1.2" marker-end="url(#a)"/>
+<!-- plan -->
+<rect x="686" y="470" width="96" height="30" rx="5" fill="#292524"/>
+<text x="734" y="490" text-anchor="middle" class="si" fill="#a8a29e" font-family="'SF Mono','Fira Code','Courier New',monospace">/speckit.plan</text>
+
+<!-- checklist + tasks below -->
+<text x="520" y="522" class="si" fill="#78716c" font-family="'SF Mono','Fira Code','Courier New',monospace">+ /speckit.checklist</text>
+<text x="670" y="522" class="si" fill="#78716c" font-family="'SF Mono','Fira Code','Courier New',monospace">+ /speckit.tasks</text>
+<text x="650" y="548" text-anchor="middle" class="si" fill="#57534e">spec + plan + tasks.md</text>
+
+<!-- Converging lines to output -->
+<line x1="270" y1="560" x2="270" y2="582" stroke="#475569" stroke-width="1.2"/>
+<line x1="650" y1="560" x2="650" y2="582" stroke="#475569" stroke-width="1.2"/>
+<line x1="270" y1="582" x2="650" y2="582" stroke="#475569" stroke-width="1.2"/>
+<line x1="460" y1="582" x2="460" y2="594" stroke="#475569" stroke-width="1.5" marker-end="url(#a)"/>
+
+<!-- ═══ OUTPUT ═══ -->
+<rect x="160" y="600" width="600" height="62" rx="8" fill="#052e16" stroke="#16a34a" stroke-width="1.5"/>
+<text x="460" y="620" text-anchor="middle" class="ol">OUTPUT</text>
+<text x="460" y="643" text-anchor="middle" class="on">specs/ artefacts (local, gitignored)</text>
+<text x="460" y="658" text-anchor="middle" class="oi">spec.md · plan.md · tasks.md (full) · feature/&lt;name&gt; branch (if requested)</text>
+
+</svg>
