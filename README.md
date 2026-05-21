@@ -28,11 +28,20 @@ Built around four tools that work together: semantic doc search, token-efficient
 
 ### Option A — Claude Code plugin (skills + agents only)
 
-```bash
-claude plugin install franpf/delilah-code-setup
+In Claude Code, run the slash command to register the marketplace:
+```
+/plugin marketplace add FranPerezFolgado/delilah-code-setup
 ```
 
-Installs all skills and agents into `~/.claude`. Then run the setup script for the system tools (Option B without the clone).
+Then install:
+```bash
+claude plugin install delilah-code-setup@FranPerezFolgado
+```
+
+After that, run the setup script to install the system tools (QMD, RTK, Codegraph, spec-kit):
+```bash
+curl -fsSL https://raw.githubusercontent.com/FranPerezFolgado/delilah-code-setup/main/setup.sh | zsh
+```
 
 ### Option B — Full install script (tools + skills + agents)
 
