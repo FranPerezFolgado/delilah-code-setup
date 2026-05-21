@@ -9,22 +9,7 @@ Starting Spec-Kit workflow for: **$ARGUMENTS**
 
 ---
 
-## Phase 0 — Setup
-
-**FIRST — Ask the user these three questions before doing anything else:**
-
-1. "Output format for the spec and plan — `html` (opens in browser) or `markdown` (inline)?"
-2. "Create the feature branch automatically when we reach implementation? (`yes` / `no`)"
-3. "Scope — `lean` (specify → plan, fast) or `full` (specify → clarify → checklist → plan → tasks)?"
-
-Store answers as:
-- `OUTPUT_FORMAT`: `html` or `markdown`
-- `CLAUDE_BRANCHES`: `yes` or `no`
-- `SCOPE`: `lean` or `full`
-
-Wait for the user's answers before continuing.
-
----
+## Phase 0 — Load context
 
 Dispatch the `code-researcher` agent and QMD search in parallel:
 
@@ -39,11 +24,47 @@ query(collection: "<project-collection>", searches: [
 **code-researcher — affected code:**
 Which modules, files, and dependencies will be touched by this feature.
 
-Present a summary: prior art found + affected files map.
+Present a summary of findings.
 
-**STOP — Ask:** "Context loaded. Anything to add before I write the spec?"
+Then use the AskUserQuestion tool with these exact parameters:
 
-Wait for go-ahead before continuing.
+```json
+{
+  "questions": [
+    {
+      "question": "Output format for the spec and plan?",
+      "header": "Format",
+      "multiSelect": false,
+      "options": [
+        { "label": "markdown", "description": "Only .md files in specs/" },
+        { "label": "html", "description": "HTML reports + .md files, opened in browser" }
+      ]
+    },
+    {
+      "question": "Create the feature branch automatically?",
+      "header": "Branch",
+      "multiSelect": false,
+      "options": [
+        { "label": "yes", "description": "Creates feature/<name> branch" },
+        { "label": "no", "description": "Local only, no branch created" }
+      ]
+    },
+    {
+      "question": "Which phases to run?",
+      "header": "Scope",
+      "multiSelect": false,
+      "options": [
+        { "label": "lean", "description": "specify → plan — fast, good for exploration" },
+        { "label": "full", "description": "specify → clarify → checklist → plan → tasks — production-ready" }
+      ]
+    }
+  ]
+}
+```
+
+Store answers as `OUTPUT_FORMAT`, `CLAUDE_BRANCHES`, `SCOPE`.
+
+Wait for all answers before continuing.
 
 ---
 
@@ -60,32 +81,24 @@ done
 
 Invoke the `speckit-specify` skill passing: description + prior art context + affected files map.
 
-If `OUTPUT_FORMAT` is `html`:
-- Generate a complete `<html>` version with inline CSS
-- Write to `specs/<name>/spec.html`
-- Open: `open specs/<name>/spec.html`
-
-If `OUTPUT_FORMAT` is `markdown`, present spec inline.
+If `OUTPUT_FORMAT` is `html`: generate `specs/<name>/spec.html` and open it.
+If `OUTPUT_FORMAT` is `markdown`: present spec inline.
 
 **STOP — Ask:** "Spec ready. Approve to move to planning, or tell me what to change."
-
-Wait for explicit approval before continuing.
+Wait for explicit approval.
 
 ---
 
 ## Phase 2 — Plan
 
-If `SCOPE` is `full`: invoke the `speckit-clarify` skill first if ambiguities exist, then invoke the `speckit-checklist` skill.
+If `SCOPE` is `full`: invoke the `speckit-clarify` skill if ambiguities exist, then `speckit-checklist`.
 
 Invoke the `speckit-plan` skill.
 
-If `OUTPUT_FORMAT` is `html`:
-- Generate `specs/<name>/plan.html` with same styling
-- Open: `open specs/<name>/plan.html`
+If `OUTPUT_FORMAT` is `html`: generate `specs/<name>/plan.html` and open it.
 
 **STOP — Ask:** "Plan ready. Approve to generate tasks, or tell me what to adjust."
-
-Wait for explicit approval before continuing.
+Wait for explicit approval.
 
 ---
 
@@ -93,9 +106,7 @@ Wait for explicit approval before continuing.
 
 Invoke the `speckit-tasks` skill.
 
-If `OUTPUT_FORMAT` is `html`:
-- Generate `specs/<name>/tasks.html`
-- Open: `open specs/<name>/tasks.html`
+If `OUTPUT_FORMAT` is `html`: generate `specs/<name>/tasks.html` and open it.
 
 ---
 
@@ -109,6 +120,6 @@ If `OUTPUT_FORMAT` is `html`:
 
 ## Rules
 
-- ALWAYS ask the three setup questions BEFORE dispatching any research
+- ALWAYS use AskUserQuestion tool after presenting the context summary — never ask in plain text
 - ALWAYS wait for explicit approval between phases — never auto-advance
 - Never start implementation — this skill covers up to task generation only
