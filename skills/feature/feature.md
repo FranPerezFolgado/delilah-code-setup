@@ -45,16 +45,26 @@ Delegate to the `code-researcher` subagent to identify which parts of the codeba
 
 Show the user a brief map of affected files/modules before continuing. This feeds context into spec-kit.
 
-### 4. Ask three questions
+### 4. Ask three questions using the AskUserQuestion tool
 
-- **Output format**: `markdown` (only .md files) or `html` (reports + .md)
-- **Auto branch and commits**: `yes` — creates `feature/<name>` / `no`
-- **Scope**: `lean` (specify → plan) or `full` (specify → clarify → checklist → plan → tasks)
+Use the AskUserQuestion tool to present all three questions at once with predefined options:
+
+**Question 1 — Output format**
+- `markdown` — only .md files in specs/
+- `html` — HTML reports + .md files
+
+**Question 2 — Auto branch**
+- `yes` — create feature/<name> branch automatically
+- `no` — local only, no branch created
+
+**Question 3 — Scope**
+- `lean` — specify → plan (fast, good for exploration)
+- `full` — specify → clarify → checklist → plan → tasks (production-ready)
 
 ### 5. Initialise spec-kit if missing
 Check if `.specify/` exists in the current directory.
 
-If not:
+If not, run the bash command:
 ```bash
 specify init . --integration claude
 ```
@@ -70,18 +80,20 @@ done
 
 ### 6. Run phases
 
-**Always:**
-- `/speckit.specify` — pass description + prior art context + affected files map
+Invoke each phase as a slash command in sequence:
 
-**If `full`:**
-- `/speckit.clarify` if ambiguities detected
-- `/speckit.checklist`
+**Always — run first:**
+Invoke `/speckit.specify` passing: feature description + prior art context + affected files map
 
-**Always:**
-- `/speckit.plan`
+**If scope = `full`:**
+Invoke `/speckit.clarify` if ambiguities were detected in the spec
+Invoke `/speckit.checklist` to validate spec quality
 
-**If `full`:**
-- `/speckit.tasks`
+**Always — run after clarify/checklist:**
+Invoke `/speckit.plan` to generate the technical plan
+
+**If scope = `full`:**
+Invoke `/speckit.tasks` to break plan into phased tasks
 
 ### 7. Branch management (if auto-branch = yes)
 ```bash
