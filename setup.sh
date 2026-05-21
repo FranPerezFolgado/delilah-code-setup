@@ -64,15 +64,22 @@ else
   bun install -g @colbymchenry/codegraph && ok "codegraph installed"
 fi
 
-# ── 4. Spec-kit ───────────────────────────────────────────────
+# ── 4. Spec-kit CLI ───────────────────────────────────────────
 echo "\n── Spec-kit ──"
-if command -v claude &>/dev/null; then
-  info "Installing spec-kit plugin..."
-  claude plugin install github/spec-kit 2>/dev/null && ok "spec-kit installed" || ok "spec-kit already installed"
+if command -v specify &>/dev/null; then
+  ok "specify already installed ($(specify --version 2>/dev/null || echo 'unknown version'))"
 else
-  info "Claude Code CLI not found — install spec-kit manually later:"
-  info "  claude plugin install github/spec-kit"
+  if command -v uv &>/dev/null; then
+    info "Installing specify-cli via uv..."
+    uv tool install specify-cli --from git+https://github.com/github/spec-kit.git && ok "specify installed"
+  else
+    info "uv not found — installing uv first..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.local/bin:$PATH"
+    uv tool install specify-cli --from git+https://github.com/github/spec-kit.git && ok "specify installed"
+  fi
 fi
+info "Run 'specify init . --integration claude' inside each project to activate spec-kit skills"
 
 # ── 5. RTK hook ───────────────────────────────────────────────
 echo "\n── RTK hook ──"
