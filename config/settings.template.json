@@ -1,0 +1,58 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__codegraph__codegraph_search",
+      "mcp__codegraph__codegraph_context",
+      "mcp__codegraph__codegraph_callers",
+      "mcp__codegraph__codegraph_callees",
+      "mcp__codegraph__codegraph_impact",
+      "mcp__codegraph__codegraph_node",
+      "mcp__codegraph__codegraph_status",
+      "mcp__codegraph__codegraph_files",
+      "mcp__qmd__query",
+      "mcp__qmd__get",
+      "mcp__qmd__multi_get",
+      "mcp__qmd__status"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rtk hook claude"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -d .codegraph ] && [ -f package.json -o -f Cargo.toml -o -f go.mod -o -f pyproject.toml -o -f pom.xml ] && echo 'SETUP NEEDED: Codegraph not initialised. Run: codegraph init -i' || true"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {},
+  "autoUpdatesChannel": "stable",
+  "theme": "dark-ansi",
+  "mcpServers": {
+    "qmd": {
+      "url": "http://localhost:8181/mcp"
+    },
+    "codegraph": {
+      "type": "stdio",
+      "command": "codegraph",
+      "args": [
+        "serve",
+        "--mcp"
+      ]
+    }
+  }
+}

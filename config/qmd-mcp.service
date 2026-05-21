@@ -1,0 +1,12 @@
+[Unit]
+Description=QMD MCP HTTP daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/env qmd mcp --http --daemon
+Restart=always
+RestartSec=5
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=default.target

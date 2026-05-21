@@ -1,0 +1,6 @@
+# delilah-code-setup — local workflow directories
+# These are never committed. Added automatically by /project-setup and /setup-qmd.
+docs/sessions/
+specs/
+.specify/
+.codegraph/
