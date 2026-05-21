@@ -1,0 +1,20 @@
+{
+  "name": "delilah-code-setup",
+  "owner": {
+    "name": "franpf"
+  },
+  "plugins": [
+    {
+      "name": "delilah-code-setup",
+      "source": "./",
+      "description": "Minimal, opinionated Claude Code setup — semantic doc search, token-efficient shell, code graph navigation, and spec-driven feature development.",
+      "version": "1.0.0",
+      "author": {
+        "name": "franpf"
+      },
+      "repository": "https://github.com/franpf/delilah-code-setup",
+      "license": "MIT",
+      "keywords": ["qmd", "rtk", "codegraph", "spec-kit", "workflow", "skills", "agents"]
+    }
+  ]
+}

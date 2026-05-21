@@ -1,0 +1,25 @@
+{
+  "name": "delilah-code-setup",
+  "version": "1.1.0",
+  "description": "Minimal, opinionated Claude Code setup — semantic doc search, token-efficient shell, code graph navigation, and spec-driven feature development.",
+  "author": {
+    "name": "franpf",
+    "url": "https://github.com/franpf"
+  },
+  "repository": "https://github.com/franpf/delilah-code-setup",
+  "license": "MIT",
+  "keywords": ["qmd", "rtk", "codegraph", "spec-kit", "workflow", "review"],
+  "skills": [
+    "./skills/"
+  ],
+  "agents": [
+    "./agents/code-researcher.md",
+    "./agents/doc-searcher.md",
+    "./agents/commit-writer.md",
+    "./agents/doc-checker.md",
+    "./agents/security-reviewer.md",
+    "./agents/code-quality-reviewer.md",
+    "./agents/test-reviewer.md",
+    "./agents/architecture-reviewer.md"
+  ]
+}
