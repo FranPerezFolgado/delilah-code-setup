@@ -139,15 +139,16 @@ else
   ok "CLAUDE.md installed"
 fi
 
-# ── 8. Skills ─────────────────────────────────────────────────
+# ── 8. Skills + Commands ──────────────────────────────────────
 echo "\n── Skills ──"
-mkdir -p "$HOME/.claude/skills"
+mkdir -p "$HOME/.claude/skills" "$HOME/.claude/commands"
 for skill in "$REPO_DIR/skills/"*.md; do
   name=$(basename "$skill")
   cp "$skill" "$HOME/.claude/skills/$name"
+  cp "$skill" "$HOME/.claude/commands/$name"
   echo "  → $name"
 done
-ok "skills installed"
+ok "skills installed (skills/ + commands/)"
 
 # ── 9. Agents ─────────────────────────────────────────────────
 echo "\n── Agents ──"
