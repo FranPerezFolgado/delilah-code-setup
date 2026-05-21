@@ -5,49 +5,11 @@ argument: description - what feature you want to implement
 
 # feature
 
-Spec-driven feature development wrapping the early phases of spec-kit.
-Usage: `/feature <feature description>`
+## FIRST ACTION — before anything else
 
-## Flow
+If no argument was passed, ask the user for the feature description in a single message.
 
-### 1. Get description
-If not passed as argument, ask the user what feature they want to implement.
-
-### 2. Search for prior art in QMD
-Before anything else, search QMD for similar work already implemented or specified.
-
-Run in parallel:
-
-**Project collection** (defined in local `CLAUDE.md` under `## QMD Collection`):
-```
-query(collection: "<project-collection>", searches: [
-  {type: "lex", query: "<feature keywords>"},
-  {type: "vec", query: "<semantic description of the feature>"}
-], intent: "prior implementations or specs for this feature")
-```
-
-**Global collections** (if relevant collections from other projects exist):
-```
-query(searches: [
-  {type: "vec", query: "<semantic description of the feature>"}
-], intent: "similar features done in other projects")
-```
-
-Present relevant results to the user:
-- If prior art found: show what exists, where, and ask if they want to build on it
-- If nothing found: continue
-
-### 3. Analyse affected code with code-nav
-Delegate to the `code-researcher` subagent to identify which parts of the codebase will be affected by the feature:
-- Modules, classes, or services related to the feature area
-- Files likely to change
-- Relevant dependencies (what calls what in that area)
-
-Show the user a brief map of affected files/modules before continuing. This feeds context into spec-kit.
-
-### 4. Ask three questions
-
-Call the AskUserQuestion tool with exactly these parameters:
+Then **immediately** call the AskUserQuestion tool with these exact parameters — do not ask in plain text, do not proceed without calling the tool:
 
 ```json
 {
@@ -83,10 +45,38 @@ Call the AskUserQuestion tool with exactly these parameters:
 }
 ```
 
-### 5. Initialise spec-kit if missing
-Check if `.specify/` exists in the current directory.
+Wait for all three answers before continuing.
 
-If not, run the bash command:
+---
+
+## Flow (after questions are answered)
+
+### 1. Search for prior art in QMD
+Run in parallel:
+
+**Project collection** (defined in local `CLAUDE.md` under `## QMD Collection`):
+```
+query(collection: "<project-collection>", searches: [
+  {type: "lex", query: "<feature keywords>"},
+  {type: "vec", query: "<semantic description of the feature>"}
+], intent: "prior implementations or specs for this feature")
+```
+
+**Global collections**:
+```
+query(searches: [
+  {type: "vec", query: "<semantic description of the feature>"}
+], intent: "similar features done in other projects")
+```
+
+If prior art found: show what exists and ask if they want to build on it.
+
+### 2. Analyse affected code
+Delegate to the `code-researcher` subagent: which modules, files, and dependencies will be affected.
+
+Show a brief map before continuing.
+
+### 3. Initialise spec-kit if missing
 ```bash
 specify init . --integration claude
 ```
@@ -100,36 +90,24 @@ for entry in ".specify/" "specs/"; do
 done
 ```
 
-### 6. Run phases
+### 4. Run phases
 
-Invoke each phase as a slash command in sequence:
+**Always:** invoke `/speckit.specify` passing description + prior art context + affected files map
 
-**Always — run first:**
-Invoke `/speckit.specify` passing: feature description + prior art context + affected files map
+**If scope = full:** invoke `/speckit.clarify` if ambiguities detected, then invoke `/speckit.checklist`
 
-**If scope = `full`:**
-Invoke `/speckit.clarify` if ambiguities were detected in the spec
-Invoke `/speckit.checklist` to validate spec quality
+**Always:** invoke `/speckit.plan`
 
-**Always — run after clarify/checklist:**
-Invoke `/speckit.plan` to generate the technical plan
+**If scope = full:** invoke `/speckit.tasks`
 
-**If scope = `full`:**
-Invoke `/speckit.tasks` to break plan into phased tasks
-
-### 7. Branch management (if auto-branch = yes)
+### 5. Branch (if branch = yes)
 ```bash
 git checkout -b feature/<kebab-case-name>
 ```
 
-Any commits made (spec artefacts, implementation, or otherwise) must never include `Co-Authored-By` lines or AI attribution. Plain commits only.
+No `Co-Authored-By` or AI attribution in any commits.
 
-### 8. Report to user
-- Artefacts created: paths to `spec.md`, `plan.md`, `tasks.md`
-- Active branch (if created)
-- Suggested next step: `/speckit.implement` or `/speckit.tasks`
-
-## Notes
-
-- Artefacts in `specs/` and `.specify/` are in `.gitignore` — local only, not committed.
-- To resume a paused feature: artefacts persist in `specs/<name>/`.
+### 6. Report
+- Artefacts created with paths
+- Active branch if created
+- Next step: `/speckit.implement` or `/speckit.tasks`
