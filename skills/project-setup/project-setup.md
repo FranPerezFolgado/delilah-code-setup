@@ -31,10 +31,13 @@ done
 
 ### 4. Initialise spec-kit (if missing)
 ```bash
-specify init . --integration claude
+specify init --here --integration claude --force --no-git
 ```
 
-This installs spec-kit skills (`speckit-specify`, `speckit-plan`, etc.) into the project's `.claude/` directory.
+- `--here`: initialise in current directory
+- `--integration claude`: non-interactive, installs spec-kit skills into `.claude/`
+- `--force`: skip confirmation if directory not empty
+- `--no-git`: project already has git
 
 Then create the base constitution if it doesn't exist yet:
 ```bash
