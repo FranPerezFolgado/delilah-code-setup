@@ -3,85 +3,60 @@ description: Spec-driven feature development wrapping spec-kit early phases (spe
 argument: description - what feature you want to implement
 ---
 
-# feature
+# Feature: Spec-Kit guided workflow
 
-## FIRST ACTION — before anything else
+Starting Spec-Kit workflow for: **$ARGUMENTS**
 
-If no argument was passed, ask the user for the feature description in a single message.
+---
 
-Then **immediately** call the AskUserQuestion tool with these exact parameters — do not ask in plain text, do not proceed without calling the tool:
+## Phase 0 — Setup
 
-```json
-{
-  "questions": [
-    {
-      "question": "Output format for spec artefacts?",
-      "header": "Format",
-      "multiSelect": false,
-      "options": [
-        { "label": "markdown", "description": "Only .md files in specs/" },
-        { "label": "html", "description": "HTML reports + .md files" }
-      ]
-    },
-    {
-      "question": "Create a feature branch automatically?",
-      "header": "Branch",
-      "multiSelect": false,
-      "options": [
-        { "label": "yes", "description": "Creates feature/<name> branch" },
-        { "label": "no", "description": "Local only, no branch created" }
-      ]
-    },
-    {
-      "question": "Which phases to run?",
-      "header": "Scope",
-      "multiSelect": false,
-      "options": [
-        { "label": "lean", "description": "specify → plan — fast, good for exploration" },
-        { "label": "full", "description": "specify → clarify → checklist → plan → tasks — production-ready" }
-      ]
-    }
-  ]
-}
-```
+**Ask the user these three questions before doing anything else:**
+
+1. "Output format for the spec and plan — `html` (opens in browser) or `markdown` (inline)?"
+2. "Create the feature branch automatically when we reach implementation? (`yes` / `no`)"
+3. "Scope — `lean` (specify → plan, fast) or `full` (specify → clarify → checklist → plan → tasks)?"
+
+Store answers as:
+- `OUTPUT_FORMAT`: `html` or `markdown`
+- `CLAUDE_BRANCHES`: `yes` or `no`
+- `SCOPE`: `lean` or `full`
 
 Wait for all three answers before continuing.
 
 ---
 
-## Flow (after questions are answered)
+## Phase 1 — Load context
 
-### 1. Search for prior art in QMD
-Run in parallel:
+Dispatch the `code-researcher` agent and QMD search in parallel:
 
-**Project collection** (defined in local `CLAUDE.md` under `## QMD Collection`):
+**QMD — prior art and decisions:**
 ```
 query(collection: "<project-collection>", searches: [
   {type: "lex", query: "<feature keywords>"},
-  {type: "vec", query: "<semantic description of the feature>"}
-], intent: "prior implementations or specs for this feature")
+  {type: "vec", query: "<feature description>"}
+], intent: "prior implementations, ADRs, or sessions related to this feature")
 ```
 
-**Global collections**:
-```
-query(searches: [
-  {type: "vec", query: "<semantic description of the feature>"}
-], intent: "similar features done in other projects")
-```
+**code-researcher — affected code:**
+Which modules, files, and dependencies will be touched by this feature.
 
-If prior art found: show what exists and ask if they want to build on it.
+Present a summary: prior art found + affected files map.
 
-### 2. Analyse affected code
-Delegate to the `code-researcher` subagent: which modules, files, and dependencies will be affected.
+**STOP — Ask:** "Context loaded. Anything to add before I write the spec?"
 
-Show a brief map before continuing.
+Wait for go-ahead before continuing.
 
-### 3. Initialise spec-kit if missing
+---
+
+## Phase 2 — Specify
+
+Initialise spec-kit if `.specify/` is missing:
 ```bash
 specify init . --integration claude
 ```
 
-Add only missing entries to `.gitignore`:
+Add missing entries to `.gitignore`:
 ```bash
 GITIGNORE=".gitignore"
 [ ! -f "$GITIGNORE" ] && touch "$GITIGNORE"
@@ -90,24 +65,60 @@ for entry in ".specify/" "specs/"; do
 done
 ```
 
-### 4. Run phases
+Invoke `/speckit.specify` passing: description + prior art context + affected files map.
 
-**Always:** invoke `/speckit.specify` passing description + prior art context + affected files map
+If `OUTPUT_FORMAT` is `html`:
+- Generate a complete `<html>` version with inline CSS
+- Write to `specs/<name>/spec.html`
+- Open: `open specs/<name>/spec.html`
 
-**If scope = full:** invoke `/speckit.clarify` if ambiguities detected, then invoke `/speckit.checklist`
+If `OUTPUT_FORMAT` is `markdown`, present spec inline.
 
-**Always:** invoke `/speckit.plan`
+**STOP — Ask:** "Spec ready. Approve to move to planning, or tell me what to change."
 
-**If scope = full:** invoke `/speckit.tasks`
+Wait for explicit approval before continuing.
 
-### 5. Branch (if branch = yes)
-```bash
-git checkout -b feature/<kebab-case-name>
-```
+---
+
+## Phase 3 — Plan
+
+Invoke `/speckit.plan`.
+
+If `SCOPE` is `full`: invoke `/speckit.clarify` first if ambiguities exist, then `/speckit.checklist`.
+
+If `OUTPUT_FORMAT` is `html`:
+- Generate `specs/<name>/plan.html` with same styling
+- Open: `open specs/<name>/plan.html`
+
+**STOP — Ask:** "Plan ready. Approve to generate tasks, or tell me what to adjust."
+
+Wait for explicit approval before continuing.
+
+---
+
+## Phase 4 — Tasks (only if SCOPE = full)
+
+Invoke `/speckit.tasks`.
+
+If `OUTPUT_FORMAT` is `html`:
+- Generate `specs/<name>/tasks.html`
+- Open: `open specs/<name>/tasks.html`
+
+---
+
+## Done
+
+Artefacts saved to `specs/`. Next steps:
+
+- **If `CLAUDE_BRANCHES` is `yes`**: create branch `feature/<spec-short-name>` now
+- **If `CLAUDE_BRANCHES` is `no`**: remind the user to create it manually
 
 No `Co-Authored-By` or AI attribution in any commits.
 
-### 6. Report
-- Artefacts created with paths
-- Active branch if created
-- Next step: `/speckit.implement` or `/speckit.tasks`
+---
+
+## Rules
+
+- ALWAYS ask the three setup questions BEFORE loading context
+- ALWAYS wait for explicit approval between phases — never auto-advance
+- Never start implementation — this command covers up to task generation only
