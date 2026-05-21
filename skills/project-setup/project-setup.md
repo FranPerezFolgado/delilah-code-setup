@@ -35,10 +35,17 @@ codegraph init -i
 ```
 This is interactive — the user confirms project configuration.
 
-### 5. Initialise QMD
+### 5. Initialise spec-kit (if missing)
+Check if `.specify/` exists. If not:
+```bash
+specify init . --integration claude
+```
+This installs the `speckit-specify`, `speckit-plan`, `speckit-tasks` and other spec-kit skills into the project's `.claude/` directory.
+
+### 6. Initialise QMD
 Run `/setup-qmd` to create the project doc collection.
 
-### 6. Show summary
+### 7. Show summary
 Run `/stats` to confirm everything is operational.
 
 ## Notes
