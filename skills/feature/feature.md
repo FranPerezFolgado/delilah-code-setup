@@ -3,27 +3,32 @@ description: Spec-driven feature development wrapping spec-kit early phases (spe
 argument: description - what feature you want to implement
 ---
 
-# feature
+# Feature: Spec-Kit guided workflow
 
-**DO NOT read any files. DO NOT load context. DO NOT analyse the codebase. Ask these questions first.**
-
-1. "Output format for the spec and plan — `html` (opens in browser) or `markdown` (inline)?"
-2. "Create the feature branch automatically? (`yes` / `no`)"
-3. "Scope — `lean` (specify → plan, fast) or `full` (specify → clarify → checklist → plan → tasks)?"
-
-Store answers as `OUTPUT_FORMAT`, `CLAUDE_BRANCHES`, `SCOPE`.
-
-**Wait for all three answers before doing anything else.**
+Starting Spec-Kit workflow for: **$ARGUMENTS**
 
 ---
 
-## After receiving answers
+## Phase 0 — Setup
 
-### Phase 1 — Load context
+**FIRST — Ask the user these three questions before doing anything else:**
 
-Search QMD and code-researcher in parallel:
+1. "Output format for the spec and plan — `html` (opens in browser) or `markdown` (inline)?"
+2. "Create the feature branch automatically when we reach implementation? (`yes` / `no`)"
+3. "Scope — `lean` (specify → plan, fast) or `full` (specify → clarify → checklist → plan → tasks)?"
 
-**QMD — prior art:**
+Store answers as:
+- `OUTPUT_FORMAT`: `html` or `markdown`
+- `CLAUDE_BRANCHES`: `yes` or `no`
+- `SCOPE`: `lean` or `full`
+
+Wait for the user's answers before continuing.
+
+---
+
+Dispatch the `code-researcher` agent and QMD search in parallel:
+
+**QMD — prior art and decisions:**
 ```
 query(collection: "<project-collection>", searches: [
   {type: "lex", query: "<feature keywords>"},
@@ -32,14 +37,17 @@ query(collection: "<project-collection>", searches: [
 ```
 
 **code-researcher — affected code:**
-Which modules, files, and dependencies will be touched.
+Which modules, files, and dependencies will be touched by this feature.
 
-Present summary. Ask: "Context loaded. Anything to add before I write the spec?"
-Wait for go-ahead.
+Present a summary: prior art found + affected files map.
+
+**STOP — Ask:** "Context loaded. Anything to add before I write the spec?"
+
+Wait for go-ahead before continuing.
 
 ---
 
-### Phase 2 — Specify
+## Phase 1 — Specify
 
 Add missing entries to `.gitignore`:
 ```bash
@@ -50,38 +58,57 @@ for entry in ".specify/" "specs/"; do
 done
 ```
 
-Invoke `/speckit.specify` passing: description + prior art context + affected files map.
+Invoke the `speckit-specify` skill passing: description + prior art context + affected files map.
 
-If `OUTPUT_FORMAT` is `html`: generate `specs/<name>/spec.html` and open it.
+If `OUTPUT_FORMAT` is `html`:
+- Generate a complete `<html>` version with inline CSS
+- Write to `specs/<name>/spec.html`
+- Open: `open specs/<name>/spec.html`
 
-**Ask:** "Spec ready. Approve to move to planning, or tell me what to change."
-Wait for explicit approval.
+If `OUTPUT_FORMAT` is `markdown`, present spec inline.
 
----
+**STOP — Ask:** "Spec ready. Approve to move to planning, or tell me what to change."
 
-### Phase 3 — Plan
-
-If `SCOPE` is `full`: invoke `/speckit.clarify` if ambiguities, then `/speckit.checklist`.
-
-Invoke `/speckit.plan`.
-
-If `OUTPUT_FORMAT` is `html`: generate `specs/<name>/plan.html` and open it.
-
-**Ask:** "Plan ready. Approve to generate tasks, or tell me what to adjust."
-Wait for explicit approval.
+Wait for explicit approval before continuing.
 
 ---
 
-### Phase 4 — Tasks (only if SCOPE = full)
+## Phase 2 — Plan
 
-Invoke `/speckit.tasks`.
+If `SCOPE` is `full`: invoke the `speckit-clarify` skill first if ambiguities exist, then invoke the `speckit-checklist` skill.
 
-If `OUTPUT_FORMAT` is `html`: generate `specs/<name>/tasks.html` and open it.
+Invoke the `speckit-plan` skill.
+
+If `OUTPUT_FORMAT` is `html`:
+- Generate `specs/<name>/plan.html` with same styling
+- Open: `open specs/<name>/plan.html`
+
+**STOP — Ask:** "Plan ready. Approve to generate tasks, or tell me what to adjust."
+
+Wait for explicit approval before continuing.
 
 ---
 
-### Done
+## Phase 3 — Tasks (only if SCOPE = full)
+
+Invoke the `speckit-tasks` skill.
+
+If `OUTPUT_FORMAT` is `html`:
+- Generate `specs/<name>/tasks.html`
+- Open: `open specs/<name>/tasks.html`
+
+---
+
+## Done
 
 - If `CLAUDE_BRANCHES` is `yes`: create branch `feature/<spec-short-name>`
 - If `CLAUDE_BRANCHES` is `no`: remind user to create it manually
 - No `Co-Authored-By` or AI attribution in any commits
+
+---
+
+## Rules
+
+- ALWAYS ask the three setup questions BEFORE dispatching any research
+- ALWAYS wait for explicit approval between phases — never auto-advance
+- Never start implementation — this skill covers up to task generation only
