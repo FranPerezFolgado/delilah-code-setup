@@ -48,13 +48,13 @@ Date: YYYY-MM-DD
 - <links to specs/ artefacts if spec-kit was used>
 ```
 
-### 4. Index sessions and specs into QMD
+### 4. Re-index QMD
+`docs/` is already in the collection (added by `/setup-qmd`). Just re-embed to pick up new files:
 ```bash
-qmd collection add ./docs/sessions --name <project-collection> 2>/dev/null || true
 [ -d specs ] && qmd collection add ./specs --name <project-collection> 2>/dev/null || true
 ```
 
-### 5. Re-index QMD
+### 5. Re-embed
 ```bash
 qmd embed
 ```
