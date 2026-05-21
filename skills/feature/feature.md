@@ -84,8 +84,9 @@ Invoke the `speckit-specify` skill passing: description + prior art context + af
 If `OUTPUT_FORMAT` is `html`: generate `specs/<name>/spec.html` and open it.
 If `OUTPUT_FORMAT` is `markdown`: present spec inline.
 
-**STOP — Ask:** "Spec ready. Approve to move to planning, or tell me what to change."
-Wait for explicit approval.
+**STOP — Ask the user:** "Here is the spec. Review it and let me know: approve to move to planning, or tell me what to change."
+
+Do not proceed until the user explicitly approves (e.g., "approved", "looks good", "go ahead").
 
 ---
 
@@ -97,8 +98,9 @@ Invoke the `speckit-plan` skill.
 
 If `OUTPUT_FORMAT` is `html`: generate `specs/<name>/plan.html` and open it.
 
-**STOP — Ask:** "Plan ready. Approve to generate tasks, or tell me what to adjust."
-Wait for explicit approval.
+**STOP — Ask the user:** "Here is the technical plan. Review it and let me know: approve to generate tasks, or tell me what to adjust."
+
+Do not proceed until the user explicitly approves (e.g., "approved", "looks good", "go ahead").
 
 ---
 
