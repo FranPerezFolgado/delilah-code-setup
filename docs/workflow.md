@@ -10,9 +10,12 @@ How a typical dev session looks with this setup.
 /recall
 ```
 
-Always start here. Searches QMD for relevant context — architecture decisions, past session summaries, anything in the project docs. Claude loads this context before you write a single message.
+Always start here. `/recall` does two separate things:
 
-If `/recall` reports no collection configured, run `/project-setup` first.
+1. **Engram** (session memory): `mem_current_project`, `mem_context` for recent history, and `mem_search` by topic (project scope first, then personal). Relevant hits are read in full with `mem_get_observation`.
+2. **QMD** (reference docs only): specs, ADRs and `docs/`, through the `doc-searcher` agent.
+
+If `/recall` reports no QMD collection configured, run `/project-setup` first; that does not affect the Engram part. If Engram does not respond, `/recall` says so and does not fall back to QMD, because QMD no longer holds session memory. See [troubleshooting](troubleshooting.md).
 
 ---
 
@@ -120,12 +123,12 @@ Architecture Decision Records capture *why* a choice was made — the context, t
 
 ### Automatic detection
 
-`/save-session` runs `/adr-check` automatically before saving. It scans the diff for signals:
+`/save-session` runs `/adr-check` automatically before saving to Engram. It scans the diff for signals:
 
 - **Strong signals** (almost always an ADR): new dependency, framework change, new external integration, new architectural pattern
 - **Moderate signals**: auth strategy change, protocol change, new directory conventions
 
-If candidates are found, it presents them and asks which to document before saving the session.
+If candidates are found, it presents them and asks which to document before saving the session summary.
 
 ### Manual check
 
@@ -166,13 +169,66 @@ docs/adr/
 
 Flow:
 1. Runs `/adr-check` first — scans the diff for undocumented decisions and asks if you want to write them now
-2. Any ADRs written are included in the session summary
-3. Saves `docs/sessions/YYYY-MM-DD-<topic>.md`
-4. Indexes `docs/sessions/` and `specs/` into QMD and re-embeds
+2. Saves durable learnings with `mem_save`, one observation per idea: decisions and their why (`decision`), non-obvious bugs and root cause (`bugfix`), conventions (`pattern`), findings about tools (`discovery` / `config`)
+   - `mem_search` first: same topic means `mem_update`, already covered means skip
+   - scope `project` for this repo, `personal` for facts about your own tools
+   - if a save returns `judgment_required`, it is resolved with `mem_judge`
+3. Closes with `mem_session_summary` (goal, discoveries, accomplished, next steps, relevant files, ADRs written)
 
-Next time you run `/recall`, the session summary is searchable.
+Next time you run `/recall`, the memories are recovered from Engram.
 
-> **`docs/sessions/` is gitignored** — session summaries are local context, never committed.
+> Nothing is written to disk. Engram is the only store for session memory; QMD is not re-indexed by `/save-session` (only if an ADR was written into `docs/`).
+
+---
+
+## Working rules
+
+The global `~/.claude/CLAUDE.md` ships proportional rules, so simple work stays simple.
+
+### When to delegate
+
+Work inline by default. A subagent is used only when one of these applies, and it is named before delegating:
+
+1. **Explore**: understanding unfamiliar code takes more than ~5 searches in a row.
+2. **Parallel writers**: two or more independent tasks touching different files, several minutes each.
+3. **Context handoff**: the session is very long; the next bounded unit goes to a fresh worker.
+4. **Independent verification**: the change is high risk.
+
+When in doubt, inline. The number of files or the size of the task alone does not decide. When delegating, pass exact paths (`spec.md`, `plan.md`, `tasks.md`, `SKILL.md`), not a paraphrase, and say which verification commands to run.
+
+### Small vs large work
+
+- **Small** (fits one session, resumable by reading the diff, contained risk): do it directly, no spec.
+- **Large** (several sessions, external waits, or requirements that would not survive a compaction): use Spec Kit (`/feature`), then execute the tasks with `/run-tasks`.
+
+### `/run-tasks`
+
+```
+/run-tasks specs/003-async-hc3
+```
+
+Without an argument it uses the most recent folder under `specs/`. It:
+1. Reads `tasks.md` (only checks that `spec.md` and `plan.md` exist)
+2. Groups pending tasks by phase, respecting order and dependencies
+3. Runs tasks marked `[P]` with non-overlapping files as a parallel batch (one subagent per task, with the exact task text and allowed files); small or dependent tasks are done inline
+4. Marks each task `- [x]` with an evidence line (`command: result`)
+5. Applies the risk-based review to each phase's diff
+6. Saves the decisions taken to Engram
+7. Stops and reports; it never commits or pushes
+
+### Test-first
+
+When there is an executable test and a clear result: a failing test (RED) per requested rule, then implementation (GREEN), then refactor. Add a test for each existing behaviour you touch, nothing more. If a test makes no sense, say why and run the functional checks anyway.
+
+### Risk-based review
+
+At the end of a change, classify it:
+
+- **Low** (docs, comments, no executable effect): quick re-read.
+- **Medium** (normal change covered by tests): run the tests and report `<command>: <result>`.
+- **High** (persisted data or migrations, security or auth, contracts other consumers use, concurrency, deployment, or no test would catch a regression): save the diff, run the security reviewer and the architect on it, one round of fixes for blockers, and raise whatever stays open as a decision.
+
+Commit, push and PR are always your decision.
 
 ---
 
@@ -185,10 +241,10 @@ Run once when starting on a new project:
 ```
 
 This single command:
-1. Creates `docs/sessions/`, `docs/adr/`, `specs/`
-2. Adds `docs/sessions/`, `specs/`, `.codegraph/`, `.specify/` to `.gitignore` (safe append — never overwrites existing content)
-3. Initialises Codegraph interactively
-4. Runs `/setup-qmd` to index docs, sessions, and specs
+1. Creates `docs/adr/`, `specs/`
+2. Adds `specs/`, `.codegraph/`, `.specify/` to `.gitignore` (safe append — never overwrites existing content)
+3. Initialises spec-kit and Codegraph (the latter interactively)
+4. Runs `/setup-qmd` to index reference docs and specs (not session memory, which lives in Engram)
 5. Shows `/stats` to confirm everything is operational
 
 ### What gets created locally
@@ -196,14 +252,13 @@ This single command:
 ```
 your-project/
 ├── docs/
-│   ├── sessions/      ← session summaries (gitignored, local only)
 │   └── adr/           ← architecture decision records (committed)
 ├── specs/             ← spec-kit artefacts (gitignored)
 ├── .codegraph/        ← code graph index (gitignored)
 └── .specify/          ← spec-kit config (gitignored)
 ```
 
-`docs/adr/` is the only new directory that gets committed — it's where ADRs live.
+`docs/adr/` is the only new directory that gets committed — it's where ADRs live. Session memory is not in the project at all; it is in Engram.
 
 ### Spec-kit
 
@@ -215,7 +270,7 @@ your-project/
 
 | Situation | Command |
 |-----------|---------|
-| Start a session | `/recall` |
+| Start a session (Engram + docs) | `/recall` |
 | New feature | `/feature "description"` |
 | Review local changes | `/review` |
 | Review known PR fast | `/review 42` |
@@ -223,7 +278,8 @@ your-project/
 | Commit | `/commit` |
 | Check stale docs | `/doc-check` |
 | Find code | `/code-nav "question"` |
-| End session | `/save-session topic` |
+| End session (save to Engram) | `/save-session topic` |
+| Run a spec's tasks | `/run-tasks specs/<feature>` |
 | Setup new project | `/project-setup` |
 | Token savings report | `rtk gain` |
 | Setup status | `/stats` |
