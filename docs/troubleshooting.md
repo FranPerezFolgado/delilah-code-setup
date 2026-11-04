@@ -6,7 +6,7 @@ Common issues and how to fix them. Run `/stats` first — it detects most proble
 
 ## QMD not responding
 
-**Symptom:** `/recall` returns nothing, or Claude can't use `mcp__qmd__*` tools.
+**Symptom:** `/recall` can't find docs, or Claude can't use `mcp__qmd__*` tools. (QMD only holds reference docs; session memory is in Engram.)
 
 **Check:**
 ```bash
@@ -40,7 +40,7 @@ Run `./setup.sh` again — it creates and loads the daemon config.
 
 ## QMD collection not found
 
-**Symptom:** `/recall` says "No QMD collection found for this project."
+**Symptom:** `/recall` says no QMD collection is configured (the Engram part still works).
 
 **Fix:**
 ```
@@ -123,6 +123,78 @@ claude plugin install github/spec-kit
 ```
 
 Then restart Claude Code.
+
+---
+
+## Engram not listed in `claude mcp list`
+
+**Symptom:** `claude mcp list | grep engram` prints nothing, `/recall` says "Engram is not responding", or the `mem_*` tools are missing.
+
+**Check:**
+```bash
+command -v engram        # the binary
+claude plugin list       # the Engram plugin
+claude mcp list | grep engram
+```
+
+**Fix:**
+1. If the binary is missing: `brew install gentleman-programming/tap/engram` (or follow https://github.com/Gentleman-Programming/engram).
+2. If the plugin is missing: `claude plugin marketplace add Gentleman-Programming/engram`, then `claude plugin install engram`.
+3. Register the MCP server:
+   ```bash
+   engram setup claude-code
+   ```
+4. Restart Claude Code.
+
+Re-running `./setup.sh` does steps 1 to 3 for you. If the `claude` CLI was not on your PATH, the installer prints a warning at the end that the plugin and MCP were not registered.
+
+---
+
+## Conflicts when saving memories
+
+**Symptom:** `mem_save` returns `judgment_required`, or you suspect duplicates.
+
+**What to do:**
+1. Run `mem_search` for the topic in the project before saving.
+2. If a memory on the same topic exists, read it with `mem_get_observation` and update it with `mem_update` (keep its `topic_key`) instead of saving a new one. If it is already covered, skip.
+3. If a save still returns `judgment_required`, resolve it with `mem_judge` (use `mem_judge_many` when there are several candidates). Ask the user when unsure.
+
+`/save-session` follows this order already.
+
+---
+
+## Backup and restore
+
+**Back up your memories:**
+```bash
+engram export [file]
+```
+
+**Restore them:**
+```bash
+engram import <file>
+```
+
+**Config files.** Before the installer overwrites `~/.claude/settings.json`, the managed block of `~/.claude/CLAUDE.md`, or an installed skill, agent or command, it copies the previous file to `~/.claude/backups/<timestamp>/` (same path relative to `$HOME`). The path is printed at the end of the run. To restore, copy the files back from that folder.
+
+Restoring a whole `~/.claude/backups/<timestamp>/` also undoes that run's `rtk init` changes to `settings.json`, because the backup holds the file as it was before the run.
+
+---
+
+## Installer aborted: malformed markers / invalid settings.json
+
+**Symptom:** `./setup.sh` stops early with one of:
+
+- `~/.claude/settings.json is not a valid JSON object — fix or remove it and re-run (nothing was changed)`
+- `~/.claude/CLAUDE.md has unbalanced or duplicate fran-setup markers — fix them by hand and re-run (nothing was changed)`
+- `jq is required but not installed` / `curl is required but not installed`
+
+These checks run before any write, so nothing was modified.
+
+**Fix:**
+- `settings.json`: validate with `jq . ~/.claude/settings.json`, fix the syntax error (or restore a copy from `~/.claude/backups/`), then re-run.
+- `CLAUDE.md`: the managed block must be exactly one `<!-- fran-setup:start -->` line followed by one `<!-- fran-setup:end -->` line. Remove the duplicate or orphan marker, then re-run.
+- Missing `jq` or `curl`: install it and re-run.
 
 ---
 

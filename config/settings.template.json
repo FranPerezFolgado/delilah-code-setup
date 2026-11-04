@@ -1,4 +1,5 @@
 {
+  "autoMemoryEnabled": false,
   "permissions": {
     "allow": [
       "mcp__codegraph__codegraph_search",
@@ -12,7 +13,42 @@
       "mcp__qmd__query",
       "mcp__qmd__get",
       "mcp__qmd__multi_get",
-      "mcp__qmd__status"
+      "mcp__qmd__status",
+      "mcp__engram__mem_context",
+      "mcp__engram__mem_search",
+      "mcp__engram__mem_get_observation",
+      "mcp__engram__mem_current_project",
+      "mcp__engram__mem_save",
+      "mcp__engram__mem_session_summary",
+      "mcp__plugin_engram_engram__mem_context",
+      "mcp__plugin_engram_engram__mem_search",
+      "mcp__plugin_engram_engram__mem_get_observation",
+      "mcp__plugin_engram_engram__mem_current_project",
+      "mcp__plugin_engram_engram__mem_save",
+      "mcp__plugin_engram_engram__mem_session_summary"
+    ],
+    "deny": [
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Edit(**/secrets/**)",
+      "Edit(~/.ssh/**)",
+      "Read(**/*.key)",
+      "Read(**/*.p12)",
+      "Read(**/*.pem)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/secrets/**)",
+      "Read(~/.aws/credentials)",
+      "Read(~/.config/gh/hosts.yml)",
+      "Read(~/.ssh/**)"
+    ],
+    "ask": [
+      "Bash(git branch -D:*)",
+      "Bash(git push:*)",
+      "Bash(git rebase:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(rm -r:*)",
+      "Bash(rm -rf:*)"
     ]
   },
   "hooks": {
@@ -39,9 +75,6 @@
       }
     ]
   },
-  "enabledPlugins": {},
-  "autoUpdatesChannel": "stable",
-  "theme": "dark-ansi",
   "mcpServers": {
     "qmd": {
       "url": "http://localhost:8181/mcp"

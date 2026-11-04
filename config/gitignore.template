@@ -1,5 +1,6 @@
 # delilah-code-setup — local workflow directories
 # These are never committed. Added automatically by /project-setup and /setup-qmd.
+# kept for older projects that still have docs/sessions/; new projects no longer create it (session memory lives in Engram)
 docs/sessions/
 specs/
 .specify/
