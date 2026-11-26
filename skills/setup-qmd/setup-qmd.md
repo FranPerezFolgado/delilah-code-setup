@@ -14,39 +14,52 @@ Initialises a QMD collection for the current project. Run once per repo.
 
 ### 2. Ensure local directories exist and .gitignore is safe
 ```bash
-mkdir -p docs/sessions docs/adr
+mkdir -p docs/adr
 ```
 
 Add only missing entries to `.gitignore` (never overwrite existing content):
 ```bash
 GITIGNORE=".gitignore"
 [ ! -f "$GITIGNORE" ] && touch "$GITIGNORE"
-for entry in "docs/sessions/" "specs/" ".specify/" ".codegraph/"; do
+for entry in "specs/" ".specify/" ".codegraph/"; do
   grep -qF "$entry" "$GITIGNORE" || echo "$entry" >> "$GITIGNORE"
 done
 ```
 
 ### 3. Add collections
 ```bash
-# Full docs/ directory (includes sessions/, adr/, and everything else in docs/)
+# Full docs/ directory (adr/ and everything else in docs/)
 qmd collection add ./docs --name <project-name> --mask "**/*.md"
 
 # Specs (spec-kit artefacts, if they exist)
 [ -d specs ] && qmd collection add ./specs --name <project-name> 2>/dev/null || true
 ```
 
-### 4. Generate embeddings
+### 4. Exclude old session notes from the index
+Older projects may still have `docs/sessions/`. Session memory now lives in Engram, so keep those notes out of QMD.
+`ignore` is a YAML-only key (no CLI flag sets it). In `~/.config/qmd/index.yml`, add to this project's collection:
+```yaml
+collections:
+  <project-name>:
+    ignore: ["sessions/**"]
+```
+Then re-index so the ignored docs are dropped:
+```bash
+qmd update
+```
+
+### 5. Generate embeddings
 ```bash
 qmd embed
 ```
 
-### 5. Update local CLAUDE.md
+### 6. Update local CLAUDE.md
 Add to the project's `CLAUDE.md` (create if missing):
 ```markdown
 ## QMD Collection
 Active collection: `<project-name>`
 ```
 
-### 6. Confirm
+### 7. Confirm
 - Collection name and document count
 - Paths indexed (docs/, specs/ if present)

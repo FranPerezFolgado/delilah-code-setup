@@ -6,7 +6,7 @@ Deep dive on each tool in the stack.
 
 ## How it all connects
 
-The four tools form a stack. Skills and agents sit on top and wire them together.
+The five tools form a stack. Skills and agents sit on top and wire them together.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -21,7 +21,7 @@ The four tools form a stack. Skills and agents sit on top and wire them together
            │ uses
 ┌──────────▼────────────────────────────────────────────┐
 │                   MCP Tools                           │
-│        QMD (docs)        Codegraph (code)             │
+│  Engram (memory)  QMD (docs)  Codegraph (code)        │
 └──────────────────────────────────────────────────────┘
            +
 ┌─────────────────────────────────────────────────────┐
@@ -34,7 +34,7 @@ The four tools form a stack. Skills and agents sit on top and wire them together
 
 **Agents** are subprocesses with a focused job and a specific model. Lightweight tasks (search, commit message, doc check) use **Haiku** to save tokens. Review and reasoning tasks use **Sonnet**.
 
-**MCP tools** (QMD and Codegraph) run as servers that Claude queries instead of reading files. They're always available — Claude uses them automatically when `CLAUDE.md` instructs it to.
+**MCP tools** (Engram, QMD and Codegraph) run as servers that Claude queries instead of reading files. They're always available — Claude uses them automatically when `CLAUDE.md` instructs it to.
 
 **RTK** operates at the shell layer — completely invisible to Claude, it filters every command output before it reaches the context.
 
@@ -42,10 +42,61 @@ The four tools form a stack. Skills and agents sit on top and wire them together
 
 ---
 
+## Engram — Persistent session memory
+
+**Repo:** https://github.com/Gentleman-Programming/engram  
+**What it is:** A local memory store exposed to Claude as an MCP server (and a Claude Code plugin). It is the single place where what you learn while working is kept between sessions.
+
+### What it stores
+
+Durable, hard-to-reconstruct knowledge, saved as observations with `mem_save`:
+
+- decisions and their why (`decision`)
+- non-obvious bugs and their root cause (`bugfix`)
+- conventions discovered or agreed (`pattern`)
+- findings about tools, APIs or the environment (`discovery`, `config`)
+
+It also keeps one summary per session (`mem_session_summary`). It does not hold reference documentation: specs, ADRs and `docs/` stay in QMD and memories point to them instead of copying them.
+
+### Project vs personal scope
+
+- **project**: facts about the current repo. Found by `/recall` when you work in that repo.
+- **personal**: facts about your own tools and habits that are not specific to one repo.
+
+If a memory depends on a tool version, put the version in its title (for example "QMD 2.1: ignore is YAML-only").
+
+### How it is used
+
+- `/recall` reads it at session start: `mem_context`, `mem_search`, `mem_get_observation`.
+- `/save-session` writes it at the end: `mem_save` (searching first, `mem_update` for the same topic, `mem_judge` on `judgment_required`), then `mem_session_summary`.
+- `mem_context`, `mem_search`, `mem_get_observation`, `mem_current_project`, `mem_save` and `mem_session_summary` are pre-approved in `~/.claude/settings.json`, for both the `engram` MCP server name and the plugin one. `mem_update` and `mem_judge` are not pre-approved, so Claude Code asks before using them.
+
+### CLI
+
+```bash
+engram tui                   # browse saved memories
+engram export [file]         # export memories (backup)
+engram import <file>         # import an export (restore)
+engram setup claude-code     # register the MCP server with Claude Code
+claude mcp list | grep engram   # check it is registered
+```
+
+### Cloud sync
+
+Engram has optional cloud sync features. They are **not part of the default setup**: nothing here enables, configures or requires them, and your memories stay on your machine.
+
+### Claude Code auto-memory is disabled
+
+The installer sets `"autoMemoryEnabled": false` in `~/.claude/settings.json`. Claude Code has its own built-in auto-memory, and running it next to Engram would give two competing memories for the same purpose. Engram is the one on purpose. The setting is documented at https://code.claude.com/docs/en/memory.md#enable-or-disable-auto-memory (it can be set at user, project or local level). The installer forces this key on every run; every other scalar you already set in `settings.json` is kept.
+
+---
+
 ## QMD — On-device semantic search
 
 **Repo:** https://github.com/tobi/qmd  
 **What it is:** A local search engine over markdown files. Runs entirely on your machine with locally downloaded embedding models. No external API calls, no data leaves your machine.
+
+In this setup QMD is for **reference documentation only**: `docs/`, `specs/` and ADRs. Session memory lives in [Engram](#engram--persistent-session-memory), not here.
 
 ### How it works
 
@@ -73,6 +124,16 @@ qmd embed
 ```
 
 The `/setup-qmd` skill does this automatically and writes the collection name to the local `CLAUDE.md`.
+
+If an older project still has a `docs/sessions/` folder, keep it out of the index with an `ignore` entry in the collection config:
+
+`ignore` is YAML-only (no CLI flag sets it). In `~/.config/qmd/index.yml`, under the project's collection:
+
+```yaml
+    ignore: ["sessions/**"]
+```
+
+Then run `qmd update` so the ignored files are dropped. See [migration](migration.md).
 
 ### CLI reference
 

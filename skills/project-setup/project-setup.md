@@ -17,14 +17,14 @@ Check local `CLAUDE.md` for `## QMD Collection` to see if QMD is configured.
 
 ### 2. Create local directories
 ```bash
-mkdir -p docs/sessions docs/adr specs
+mkdir -p docs/adr specs
 ```
 
 ### 3. Update .gitignore (safe append — never overwrite)
 ```bash
 GITIGNORE=".gitignore"
 [ ! -f "$GITIGNORE" ] && touch "$GITIGNORE"
-for entry in "docs/sessions/" "specs/" ".specify/" ".codegraph/"; do
+for entry in "specs/" ".specify/" ".codegraph/"; do
   grep -qF "$entry" "$GITIGNORE" || echo "$entry" >> "$GITIGNORE"
 done
 ```
@@ -65,4 +65,5 @@ Run `/stats` to confirm everything is operational.
 - Steps are skipped if already configured.
 - `.specify/memory/constitution.md` is the single source of truth for spec-kit quality gates.
 - `docs/adr/` is created for ADR documentation — commit this directory.
-- `docs/sessions/`, `specs/`, `.codegraph/`, `.specify/` are gitignored — local only.
+- `specs/`, `.codegraph/`, `.specify/` are gitignored — local only.
+- Session memory lives in Engram: use `/save-session` to save it and `/recall` to get it back. Nothing is written to disk.

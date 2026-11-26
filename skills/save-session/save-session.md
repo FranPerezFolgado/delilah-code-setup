@@ -1,16 +1,21 @@
 ---
-description: Saves a structured summary of the current session to sessions/ and re-indexes QMD. Checks for undocumented ADRs first so they're included in the saved summary.
-argument: topic - descriptive name for the file (e.g. auth-refactor)
+name: save-session
+description: Saves the current session to Engram — decisions, bugs and conventions with mem_save, then a session summary with mem_session_summary. Checks for undocumented ADRs first so they're included.
+argument: topic - short name for what was worked on (e.g. auth-refactor)
 ---
 
 # save-session
 
-Saves session context to QMD so `/recall` finds it in future sessions.
+Saves session context to Engram so future sessions recover it with `mem_context` / `mem_search`.
+Reference documentation (specs, ADRs, docs/) stays in QMD; don't copy it into Engram, point to it.
+
+> **RTK active** — all Bash commands are automatically rewritten by the PreToolUse hook.
 
 ## Steps
 
-### 1. Determine topic
+### 1. Determine topic and project
 Use the argument if provided. Otherwise derive a short name from what was worked on.
+Call `mem_current_project` and use that project for every write below.
 
 ### 2. Detect pending ADRs first
 Run `/adr-check` to scan for important decisions made during the session that aren't yet documented.
@@ -23,47 +28,56 @@ If candidates are found:
 
 This ensures the session summary reflects any ADRs written during the session.
 
-### 3. Generate structured summary
-Save to `docs/sessions/YYYY-MM-DD-<topic>.md`:
+### 3. Save durable learnings with `mem_save`
+One observation per idea, only for what is durable and costly to reconstruct:
 
+| Kind | `type` |
+|---|---|
+| Decision and its why (not already in an ADR / decisions doc) | `decision` |
+| Non-obvious bug and its root cause | `bugfix` |
+| Convention discovered or agreed | `pattern` |
+| Finding about a tool, API or environment | `discovery` / `config` |
+
+For each one:
+1. `mem_search` the topic in this project first. If a match exists, read it with
+   `mem_get_observation`; same topic → `mem_update` by id (keep its `topic_key`), already covered → skip.
+2. Otherwise `mem_save` with a distinct `topic_key`, content as **What / Why / Where / Learned**,
+   and `path:line` references instead of pasted code.
+3. Scope: `project` for this repo; `personal` for facts about your own tools that aren't specific to it.
+   If the memory depends on a specific tool version, put the version in the title (e.g. "QMD 2.1: ignore is YAML-only").
+4. If the save returns `judgment_required`, resolve it with `mem_judge` (ask the user when unsure).
+
+Skip routine progress, file lists and anything the docs or git history already record.
+
+### 4. Save the session summary with `mem_session_summary`
 ```markdown
-# Session: <topic>
-Date: YYYY-MM-DD
+## Goal
+<one sentence>
 
-## What was done
-- <bullet points>
+## Instructions
+<user preferences or constraints discovered; skip if none>
 
-## Decisions made
-- <decisions with reasoning>
-- ADRs written: <list any ADRs created in step 2, with paths>
+## Discoveries
+- <gotchas and learnings, with ids of the observations saved in step 3>
 
-## Files changed
-- <main files touched>
+## Accomplished
+- ✅ <done>
+- 🔲 <identified, not done>
+- ADRs written: <paths from step 2>
 
-## Context for next session
-- <what to know before continuing>
-- <open questions or next steps>
+## Next Steps
+- <what to pick up next, open questions>
 
-## Specs generated (if any)
-- <links to specs/ artefacts if spec-kit was used>
+## Relevant Files
+- <path> — <role or what changed>
+- <specs/ artefacts if spec-kit was used>
 ```
 
-### 4. Re-index QMD
-`docs/` is already in the collection (added by `/setup-qmd`). Just re-embed to pick up new files:
-```bash
-[ -d specs ] && qmd collection add ./specs --name <project-collection> 2>/dev/null || true
-```
-
-### 5. Re-embed
-```bash
-qmd embed
-```
-
-### 6. Confirm
-- Path of saved file
-- Document count in updated QMD collection
+### 5. Confirm
+- Observations saved / updated in step 3 (id + title)
+- That the session summary was saved, and the project it went to
 
 ## Notes
 
-- `docs/sessions/` is in `.gitignore` — local only, never committed.
-- The project collection name comes from the local `CLAUDE.md` (`## QMD Collection`).
+- Session notes are no longer written to disk; Engram is the only store for session memory.
+- Don't run `qmd update` / `qmd embed` here unless step 2 wrote an ADR into `docs/`.
