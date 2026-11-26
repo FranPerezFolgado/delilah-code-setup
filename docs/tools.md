@@ -34,7 +34,7 @@ The five tools form a stack. Skills and agents sit on top and wire them together
 
 **Agents** are subprocesses with a focused job and a specific model. Lightweight tasks (search, commit message, doc check) use **Haiku** to save tokens. Diff reviews and implementation use **Sonnet**; the `/audit` agents and `debugger` use **Opus**. Every agent that reads repo content treats it as data, never as instructions (see the *Untrusted content* line at the top of each agent).
 
-**MCP tools** (Engram, QMD and Codegraph) run as servers that Claude queries instead of reading files. They're always available — Claude uses them automatically when `CLAUDE.md` instructs it to.
+**MCP tools** (Engram, QMD and Codegraph) run as servers that Claude queries instead of reading files. They're always available — Claude uses them automatically when the global rules instruct it to.
 
 **RTK** operates at the shell layer — completely invisible to Claude, it filters every command output before it reaches the context.
 
@@ -150,11 +150,11 @@ qmd mcp --http --daemon      # start HTTP MCP server
 ## RTK — Rust Token Killer
 
 **Repo:** https://github.com/rtk-ai/rtk  
-**What it is:** A transparent proxy that rewrites Claude Code shell commands to filter noise and reduce token usage 60–90%.
+**What it is:** A transparent proxy that rewrites the agent's shell commands to filter noise and reduce token usage 60–90%.
 
 ### How it works
 
-RTK is installed as a `PreToolUse` hook on the `Bash` matcher. Every shell command Claude runs goes through `rtk hook claude`, which applies smart filtering — removing boilerplate, truncating verbose output, deduplicating repeated lines — before the result reaches Claude.
+In Claude Code, RTK is a `PreToolUse` hook on the `Bash` matcher (in `.rulesync/hooks.jsonc`). In Antigravity, `rtk init -g --agent antigravity` installs it as a plugin in `~/.gemini/config/plugins/rtk/`; in Codex, `rtk init -g --codex` adds a hook to `~/.codex/hooks.json`. `setup.sh` runs both. Every shell command goes through `rtk hook <agent>`, which applies smart filtering — removing boilerplate, truncating verbose output, deduplicating repeated lines — before the result reaches Claude.
 
 From Claude's perspective, it just runs commands. From your token budget's perspective, `git log` goes from ~8,000 tokens to ~400.
 

@@ -56,7 +56,7 @@ Check that anything useful is already in Engram (step 2) before you remove them.
 
 ## 5. Clean stale instructions in `~/.claude/CLAUDE.md`
 
-The installer only owns the text between `<!-- fran-setup:start -->` and `<!-- fran-setup:end -->`. If it printed a warning about stale lines outside the markers, edit those lines yourself. Remove instructions that send session notes to `docs/sessions/` or describe QMD as session memory.
+The working rules now live in `~/.claude/rules/delilah.md`. On its first run, the installer backs up `~/.claude/CLAUDE.md` and removes the old block between `<!-- fran-setup:start -->` and `<!-- fran-setup:end -->`, so the rules aren't loaded twice. Text outside the markers is never touched. If it printed a warning about stale lines there, edit those lines yourself. Remove instructions that send session notes to `docs/sessions/` or describe QMD as session memory.
 
 ## 6. Copy-ready migration prompt
 
@@ -73,3 +73,9 @@ Migrate this project's old session notes to Engram. Do not delete any files.
 6. If mem_save returns judgment_required, resolve it with mem_judge and tell me what you decided.
 7. When done, print a table: file, memories saved, memories updated, skipped. Do not touch the source files.
 ```
+
+## 7. From the Claude Code plugin or the old repo layout
+
+- The `delilah-code-setup` Claude Code plugin is gone. Uninstall it (`claude plugin uninstall delilah-code-setup`) and run `./setup.sh`: skills and agents now come from `.rulesync/`.
+- `/run-tasks` is a skill now. The installer backs up and removes `~/.claude/commands/run-tasks.md`.
+- Edits you made in `skills/`, `agents/` or `config/CLAUDE.md` of an old checkout go to `.rulesync/skills/`, `.rulesync/subagents/` and `.rulesync/rules/delilah.md`.

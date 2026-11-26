@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "command": "[ ! -d .codegraph ] && [ -f package.json -o -f Cargo.toml -o -f go.mod -o -f pyproject.toml -o -f pom.xml ] && echo 'SETUP NEEDED: Codegraph not initialised. Run: codegraph init -i' || true"
+      }
+    ]
+  },
+  // RTK rewrites shell commands. Each tool needs its own hook binding. Claude's is
+  // here; setup.sh runs `rtk init -g --agent antigravity` (an agy plugin) and
+  // `rtk init -g --codex` for the others.
+  "claudecode": {
+    "hooks": {
+      "preToolUse": [
+        {
+          "type": "command",
+          "command": "rtk hook claude",
+          "matcher": "Bash"
+        }
+      ]
+    }
+  }
+}

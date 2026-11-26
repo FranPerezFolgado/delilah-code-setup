@@ -1,0 +1,8 @@
+{
+  "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/config-schema.json",
+  // setup.sh overrides targets with --claude / --antigravity / --codex.
+  "targets": ["claudecode", "antigravity-cli", "codexcli"],
+  "features": ["rules", "mcp", "subagents", "skills", "hooks", "permissions"],
+  "global": true,
+  "delete": false
+}

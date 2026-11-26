@@ -1,6 +1,6 @@
 # delilah-code-setup
 
-My personal Claude Code setup. Minimal, intentional, no bloat.
+My personal agent setup for Claude Code, Antigravity (`agy`) and Codex. One source, minimal, no bloat.
 
 Built around five tools that work together: session memory, semantic doc search, token-efficient shell commands, code graph navigation, and spec-driven feature development.
 
@@ -22,74 +22,86 @@ Built around five tools that work together: session memory, semantic doc search,
 
 ### Prerequisites
 
-- macOS or Linux
-- [Claude Code CLI](https://claude.ai/code)
-- [Bun](https://bun.sh) — installed automatically if missing
-- Homebrew (macOS only, for RTK) — fallback curl installer used on Linux
+- macOS or Linux, with `jq` and `curl`
+- At least one of: [Claude Code](https://claude.ai/code), Antigravity CLI (`agy`), Codex CLI
+- Homebrew (macOS) — used for RTK, Engram and rulesync; Linux falls back to curl/npm installers
 
-### Option A — Claude Code plugin (skills + agents only)
-
-In Claude Code, run the slash command to register the marketplace:
-```
-/plugin marketplace add FranPerezFolgado/delilah-code-setup
-```
-
-Then install:
-```bash
-claude plugin install delilah-code-setup@FranPerezFolgado
-```
-
-After that, run the setup script to install the system tools (Engram, QMD, RTK, Codegraph, spec-kit):
-```bash
-curl -fsSL https://raw.githubusercontent.com/FranPerezFolgado/delilah-code-setup/main/setup.sh | bash
-```
-
-### Option B — Full install script (tools + skills + agents)
+### Run
 
 ```bash
-git clone https://github.com/yourusername/delilah-code-setup
+git clone https://github.com/FranPerezFolgado/delilah-code-setup
 cd delilah-code-setup
-./setup.sh        # or: bash setup.sh
+./setup.sh                 # = --all
 ```
 
-Installs Engram (binary via Homebrew, Claude Code plugin and MCP registration), QMD, RTK, Codegraph and spec-kit, configures Claude Code globally, starts the QMD daemon, and copies all skills, agents and commands. Restart Claude Code when it finishes.
+| Flag | Installs for |
+|------|--------------|
+| `--all` (default) | Claude Code, plus Antigravity and Codex when found (`agy`/`codex` on PATH, or `~/.gemini` / `~/.codex` exists) |
+| `--claude` | Claude Code only (`~/.claude`, `~/.claude.json`) |
+| `--antigravity` | Antigravity only (`~/.gemini`) |
+| `--codex` | Codex only (`~/.codex`, `~/.agents/skills`) |
 
-Notes:
+Flags combine: `./setup.sh --claude --codex`. Restart the agents when it finishes.
 
-- Engram is installed with `brew` when available; otherwise the script prints the manual install link. If the `claude` CLI is missing, the plugin and MCP are not registered and the script says so at the end.
-- `SETUP_SKIP_INSTALL=1 ./setup.sh` skips every step that installs software or touches system services and only applies the configuration (settings, `CLAUDE.md`, skills, agents, commands).
-- Before overwriting `~/.claude/settings.json`, the managed block of `~/.claude/CLAUDE.md`, or any installed skill, agent or command, the script copies the previous file to `~/.claude/backups/<timestamp>/`. The path is printed at the end.
-- Skills are installed as `~/.claude/skills/<name>/SKILL.md`. A leftover `<name>/<name>.md` from the old layout is backed up and removed, so it can't shadow the live skill.
-- The script validates `settings.json` and the `CLAUDE.md` markers first and aborts before changing anything if they are malformed (see [troubleshooting](docs/troubleshooting.md)).
-- Coming from the old `docs/sessions/` flow? See [docs/migration.md](docs/migration.md).
+### How it works
+
+1. Installs the tools (RTK, QMD, Codegraph, Spec Kit, Engram, rulesync) and starts the QMD daemon.
+2. Runs [rulesync](https://github.com/dyoshikawa/rulesync) on `.rulesync/` into a **temporary HOME**.
+3. Merges the result into your real HOME:
+   - skills, agents and rules: copied when they differ; files you added yourself stay
+   - JSON (settings, MCP, hooks): **your values win**, lists are unioned, your extra keys stay
+   - Codex `AGENTS.md`: our part lives between `fran-setup` markers; the rest is yours
+   - Codex `config.toml`: created if missing, never rewritten (see below)
+
+rulesync on its own replaces whole files, which would drop what you added by hand — that's why it doesn't write to your HOME directly.
+
+- **Idempotent**: a second run changes nothing.
+- **Backups**: anything overwritten or removed goes to `~/.claude/backups/<timestamp>/` first.
+- **Preflight**: invalid JSON or broken markers abort before any write ([troubleshooting](docs/troubleshooting.md)).
+- `SETUP_SKIP_INSTALL=1 ./setup.sh` only applies the config (no installs, no services).
+- Coming from the old layout (`docs/sessions/`, the `fran-setup` block in `~/.claude/CLAUDE.md`, the plugin)? See [docs/migration.md](docs/migration.md).
 
 ### What gets installed
 
 ```
-~/.claude/
-├── CLAUDE.md              ← global instructions (Engram + QMD + Codegraph + RTK + working rules)
-├── settings.json          ← MCP servers, RTK hook, auto-allow permissions, autoMemoryEnabled: false
-├── backups/<timestamp>/   ← copies of files the installer overwrote
-├── commands/
-│   └── run-tasks.md       ← /run-tasks
-├── skills/                ← one dir per skill: <name>/SKILL.md (+ references/ when it has them)
-│   ├── recall/  save-session/  stats/                   ← session
-│   ├── feature/  orchestrate/  adr/  adr-check/  adr-audit/ ← feature development
-│   ├── review/  pr-review/  audit/                     ← review and audit
-│   ├── commit/  doc-check/                             ← git
-│   └── project-setup/  setup-qmd/  code-nav/  graphify/ ← project setup and navigation
-└── agents/                ← 36 subagents (see the Agents section)
-    ├── code-researcher.md, doc-searcher.md, commit-writer.md, doc-checker.md, pr-writer.md
-    ├── *-reviewer.md         ← diff reviewers (security, code quality, tests, architecture,
-    │                           contracts, migrations, spec compliance)
-    ├── task-slicer.md, implementer.md, debugger.md, ui-verifier.md ← /orchestrate
-    └── audit-*.md            ← 21 agents used by /audit
+Claude Code                      Antigravity (agy)                 Codex
+~/.claude/                       ~/.gemini/                        ~/.codex/
+├── rules/delilah.md   rules     ├── config/rules/delilah.md       ├── AGENTS.md        (fran-setup block)
+├── skills/<name>/SKILL.md       ├── antigravity-cli/skills/       ├── agents/*.toml
+├── agents/*.md                  ├── config/agents/*.md            ├── rules/rulesync.rules  command asks
+├── settings.json  permissions,  ├── config/mcp_config.json        ├── hooks.json
+│                  hooks         ├── config/hooks.json             └── config.toml      MCP, file denies
+└── backups/<timestamp>/         └── antigravity-cli/settings.json ~/.agents/skills/<name>/SKILL.md
+~/.claude.json     MCP                              permissions
 
-# QMD daemon (auto-starts at login)
-macOS  → ~/Library/LaunchAgents/com.qmd.mcp.plist   (launchd)
-Linux  → ~/.config/systemd/user/qmd-mcp.service      (systemd)
-Other  → entry added to ~/.zshrc / ~/.bashrc
+QMD daemon: macOS ~/Library/LaunchAgents/com.qmd.mcp.plist · Linux ~/.config/systemd/user/qmd-mcp.service
 ```
+
+---
+
+## Common vs per agent
+
+Everything is written once in `.rulesync/`. What only applies to one agent sits in that agent's block in the same file (`claudecode:`, `antigravity-cli:`, `codexcli:`).
+
+**Common** — rules, 17 skills, 36 agents (same text), QMD and Codegraph MCP, permission intent (deny secrets, ask before push/deploy), session-start hook.
+
+| | Claude Code | Antigravity | Codex |
+|---|---|---|---|
+| Engram MCP | from its plugin | `engram mcp` | `engram mcp` |
+| Browser | Claude Browser / claude-in-chrome | chrome-devtools MCP | chrome-devtools MCP |
+| RTK | PreToolUse hook | RTK plugin (`rtk init --agent antigravity`) | hook (`rtk init --codex`) |
+| Agent models | `model:` per agent | agy default | Codex default |
+| Agent tools | Claude tool list | mapped list (below) | Codex default |
+| File denies (`~/.ssh/**`…) | `settings.json` | **not enforced** (rulesync skips `**`) | `config.toml` (only if you merge it) |
+| Command asks (`git push`…) | `settings.json` | `settings.json` | `rules/rulesync.rules` |
+| Main config | merged | merged | `config.toml` **not merged**: we leave `config.delilah.toml` next to it |
+
+Known limits:
+
+- **agy agent tools**: agy has no grep/glob tool, so `Grep`/`Glob` map to `run_command`. Agents that are read-only in Claude can run shell commands in agy; their prompt still says Bash only inspects.
+- **agy `**` denies** (e.g. `Read(~/.ssh/**)`): not enforced. Don't rely on them there.
+- **Spec Kit**: `/project-setup` runs `specify init --integration claude`. In other agents, run `specify init` with that agent's integration.
+- **Copies, not links**: after editing `.rulesync/`, re-run `./setup.sh`.
 
 ---
 
@@ -140,7 +152,7 @@ Every agent that reads repo content starts with an *Untrusted content* rule: wha
 | Skill | What it does |
 |-------|-------------|
 | `/feature` | Spec-kit wrapper. Searches QMD for prior art, maps affected code, then runs specify → plan → tasks. |
-| `/run-tasks` | Command (not a skill). Executes the `tasks.md` of a Spec Kit feature, in parallel only when tasks touch different files. |
+| `/run-tasks` | Executes the `tasks.md` of a Spec Kit feature, in parallel only when tasks touch different files. |
 | `/orchestrate` | Implements a feature's `tasks.md` with subagents: slices it into work packages, runs code-researcher → implementer per package (test-first, in parallel when they share no files), checks each package only touched its allowed files, and reviews every phase. `/feature` hands over to it. |
 | `/adr-check` | Scans recent changes for decisions worth documenting as ADRs. Offers to write them. |
 | `/adr` | Writes an Architecture Decision Record for a decision you describe. |
@@ -214,7 +226,7 @@ See [docs/workflow.md](docs/workflow.md) for the full day-to-day reference and [
 
 ## Working rules
 
-`~/.claude/CLAUDE.md` ships a short set of proportional rules (the installer manages only the block between its `fran-setup` markers). In summary:
+`.rulesync/rules/delilah.md` is a short set of proportional rules, loaded always by every agent. Your own `~/.claude/CLAUDE.md` is left alone. In summary:
 
 - **Delegation by reason**: work inline by default; use a subagent only for one of four named reasons (explore unfamiliar code, parallel writers, context handoff, independent verification of high-risk changes).
 - **Spec Kit only for large work**: small work is done directly; large work (several sessions, external waits) gets a spec and is executed with `/run-tasks`.
@@ -243,39 +255,36 @@ Creates `docs/adr/` and `specs/`, updates `.gitignore`, initialises spec-kit, Co
 
 ```
 delilah-code-setup/
-├── README.md
-├── setup.sh                    ← bootstrap installer
-├── skills/                     ← copied to ~/.claude/skills/
-├── agents/                     ← copied to ~/.claude/agents/
-├── commands/                   ← copied to ~/.claude/commands/ (/run-tasks)
-├── tests/                      ← installer tests (bash tests/setup_test.sh)
+├── setup.sh                 ← installer (./setup.sh --help)
+├── rulesync.jsonc           ← targets and features for rulesync
+├── .rulesync/               ← THE SOURCE: edit here
+│   ├── rules/delilah.md     ← working rules
+│   ├── skills/<name>/SKILL.md
+│   ├── subagents/<name>.md  ← agents; per-agent blocks for model/tools
+│   ├── mcp.jsonc            ← MCP servers (+ per-agent blocks)
+│   ├── hooks.jsonc
+│   └── permissions.jsonc
 ├── config/
-│   ├── CLAUDE.md               ← global Claude instructions and working rules
-│   ├── settings.template.json  ← MCP + permissions template
-│   ├── merge-settings.jq       ← non-destructive settings merge
-│   ├── gitignore.template      ← entries added to project .gitignore
-│   ├── com.qmd.mcp.plist       ← macOS launchd daemon
-│   └── qmd-mcp.service         ← Linux systemd daemon
-└── docs/
-    ├── tools.md                ← deep dive on each tool + how it all connects
-    ├── workflow.md             ← full workflow reference including ADRs
-    ├── troubleshooting.md      ← common issues and fixes
-    ├── migration.md            ← moving from docs/sessions/ to Engram
-    └── adr/                    ← 001 manual PR creation, 002 Engram session memory, 003 proportional workflow
+│   ├── merge-settings.jq    ← Claude settings.json merge
+│   ├── merge-json.jq        ← generic merge: user wins, lists unioned
+│   ├── merge-hookset.jq     ← agy hooks.json: replaces only the "rulesync" set
+│   ├── gitignore.template   ← entries added to project .gitignore
+│   ├── constitution.template.md
+│   ├── com.qmd.mcp.plist    ← macOS launchd daemon
+│   └── qmd-mcp.service      ← Linux systemd daemon
+├── tests/setup_test.sh      ← installer tests (fake HOME)
+└── docs/                    ← tools, workflow, troubleshooting, migration, adr/
 ```
 
 ---
 
 ## Updating
 
-```bash
-# Push local changes to repo
-cp -R ~/.claude/skills/. ~/dev/delilah-code-setup/skills/
-cp ~/.claude/commands/*.md ~/dev/delilah-code-setup/commands/
-cp ~/.claude/agents/*.md ~/dev/delilah-code-setup/agents/
+Edit `.rulesync/`, then:
 
-# Pull updates and re-apply
-git pull && ./setup.sh
+```bash
+./setup.sh            # re-applies; only changed files are touched
+bash tests/setup_test.sh
 ```
 
-The setup script is idempotent — safe to run multiple times.
+Pulling updates: `git pull && ./setup.sh`. Edits made directly in `~/.claude/skills` etc. are overwritten on the next run when the file comes from here — make them in `.rulesync/`.

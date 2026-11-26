@@ -61,7 +61,7 @@ Progress lives in `specs/<feature>/progress.md`, so an interrupted run resumes w
 
 ## Writing code
 
-No special commands. Claude uses Codegraph automatically (enforced in `CLAUDE.md`).
+No special commands. Claude uses Codegraph automatically (enforced in the global rules).
 
 What this means in practice:
 - Claude searches for a function → `codegraph_search`, not `grep`
@@ -213,7 +213,7 @@ Next time you run `/recall`, the memories are recovered from Engram.
 
 ## Working rules
 
-The global `~/.claude/CLAUDE.md` ships proportional rules, so simple work stays simple.
+The global rules (`.rulesync/rules/delilah.md`, installed to `~/.claude/rules/`, agy rules and Codex `AGENTS.md`) are proportional, so simple work stays simple.
 
 ### When to delegate
 

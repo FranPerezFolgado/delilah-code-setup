@@ -1,0 +1,29 @@
+{
+  "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/mcp-schema.json",
+  // Shared by every agent.
+  "mcpServers": {
+    // QMD daemon (launchd/systemd), reference docs only.
+    "qmd": {
+      "url": "http://localhost:8181/mcp"
+    },
+    "codegraph": {
+      "type": "stdio",
+      "command": "codegraph",
+      "args": ["serve", "--mcp"]
+    }
+  },
+  // Claude Code gets Engram from its plugin, which ships the MCP server, and keeps
+  // its own browser tools; the other agents get both from here.
+  "antigravity-cli": {
+    "mcpServers": {
+      "engram": { "type": "stdio", "command": "engram", "args": ["mcp"] },
+      "chrome-devtools": { "type": "stdio", "command": "npx", "args": ["-y", "chrome-devtools-mcp@1.14.0"] }
+    }
+  },
+  "codexcli": {
+    "mcpServers": {
+      "engram": { "type": "stdio", "command": "engram", "args": ["mcp"] },
+      "chrome-devtools": { "type": "stdio", "command": "npx", "args": ["-y", "chrome-devtools-mcp@1.14.0"] }
+    }
+  }
+}
