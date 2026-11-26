@@ -1,10 +1,13 @@
 ---
+name: stats
 description: Shows token savings and tool status — RTK savings, QMD collections, and Codegraph index state.
 ---
 
 # Stats
 
 Shows setup status and accumulated token savings.
+
+> **RTK active** — all Bash commands are automatically rewritten by the PreToolUse hook.
 
 ## Steps
 

@@ -1,4 +1,5 @@
 ---
+name: setup-qmd
 description: Initialise a QMD doc collection for the current project. Run once per repo to index docs and update the project CLAUDE.md with the collection name.
 ---
 

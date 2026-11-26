@@ -1,4 +1,5 @@
 ---
+name: commit
 description: Generates a Conventional Commits message from staged changes and branch name
 ---
 

@@ -1,4 +1,5 @@
 ---
+name: project-setup
 description: Sets up a new project for the full dev workflow — indexes code with Codegraph and docs with QMD. Run once per new project after cloning.
 ---
 

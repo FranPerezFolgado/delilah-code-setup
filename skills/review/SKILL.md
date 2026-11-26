@@ -1,4 +1,5 @@
 ---
+name: review
 description: Quick parallel code review of local changes or a known PR. Pass a PR number/URL to review remotely. For a guided PR review with preview, use /pr-review instead.
 argument: pr - GitHub PR number or URL (optional; without argument reviews local changes)
 ---
@@ -12,6 +13,8 @@ argument: pr - GitHub PR number or URL (optional; without argument reviews local
 ---
 
 Reviews changes with 4 specialised agents in parallel.
+
+> **RTK active** — all Bash commands are automatically rewritten by the PreToolUse hook.
 
 ## Diff source
 

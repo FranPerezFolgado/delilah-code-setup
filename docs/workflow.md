@@ -43,6 +43,20 @@ Artefacts land in `specs/<feature-name>/`:
 
 None of this goes to the repo — `specs/` is gitignored.
 
+### Implementing with `/orchestrate`
+
+```
+/orchestrate specs/<feature>
+```
+
+`/feature` hands over to it once `tasks.md` exists; you can also run it directly to start or resume. It:
+1. Slices `tasks.md` into work packages with `task-slicer` (allowed files, dependencies, which packages can run in parallel).
+2. Per package: `code-researcher` maps the code, `implementer` writes the tests first and then the code. A `SubagentStop` hook re-runs the package's checks and sends the implementer back up to 3 times; a package still failing goes to `debugger`.
+3. Checks the scope: after each group it compares `git status` with the packages' allowed files. A file outside every list isn't committed until you allow it, revert it or stop.
+4. Reviews every phase with `spec-compliance-reviewer`, plus the contract, migration, security, architecture and UI reviewers the diff calls for.
+
+Progress lives in `specs/<feature>/progress.md`, so an interrupted run resumes where it stopped.
+
 ---
 
 ## Writing code
@@ -90,6 +104,22 @@ ARCHITECTURE    [✅/⚠️/❌]  summary
 
 VERDICT: ✅ READY | ⚠️ NEEDS ATTENTION | ❌ NEEDS WORK
 ```
+
+---
+
+## Auditing a whole project
+
+`/review` looks at a diff; `/audit` looks at everything.
+
+```bash
+/audit                   # full audit of the current repo
+/audit --quick           # Sonnet auditors, verify only CRITICAL/HIGH, no fuzz/e2e/chains
+/audit --live            # also run an isolated instance for security/api/frontend/e2e
+/audit trends            # compare audits over time
+/audit plan              # turn findings into work
+```
+
+`audit-mapper` maps the project, one `audit-<area>` agent per area runs in parallel, `audit-verifier` tries to disprove every finding, `audit-chainer` combines the confirmed ones into attack and failure chains, and `audit-reporter` writes one ranked report in `.audit/<date>/` (excluded from git locally). Fuzzing, mutation testing and `--live` run the audited repo's own code, so the skill asks before running them.
 
 ---
 
@@ -280,6 +310,10 @@ your-project/
 | Find code | `/code-nav "question"` |
 | End session (save to Engram) | `/save-session topic` |
 | Run a spec's tasks | `/run-tasks specs/<feature>` |
+| Implement a spec with subagents | `/orchestrate specs/<feature>` |
+| Audit the whole project | `/audit` |
+| Write or audit ADRs | `/adr`, `/adr-audit` |
+| Knowledge graph of a repo or docs | `/graphify` |
 | Setup new project | `/project-setup` |
 | Token savings report | `rtk gain` |
 | Setup status | `/stats` |

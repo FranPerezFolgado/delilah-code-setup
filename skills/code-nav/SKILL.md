@@ -1,4 +1,5 @@
 ---
+name: code-nav
 description: Delegates code searches to the code-researcher agent. Keeps the main context clean.
 argument: query - what you want to find in the codebase
 ---

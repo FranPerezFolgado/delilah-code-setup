@@ -1,4 +1,5 @@
 ---
+name: pr-review
 description: Guided remote PR review — fetches PR context, shows a preview, then runs all review agents. Use this when you want to review someone else's PR or want to see PR metadata before reviewing.
 argument: pr - PR number or URL (optional)
 ---
@@ -12,6 +13,8 @@ argument: pr - PR number or URL (optional)
 ---
 
 Guided review of a remote PR with 4 specialised agents in parallel.
+
+> **RTK active** — all Bash commands are automatically rewritten by the PreToolUse hook.
 
 ## Steps
 
