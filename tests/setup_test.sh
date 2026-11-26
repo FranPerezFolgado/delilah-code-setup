@@ -149,6 +149,33 @@ test_symlinked_targets_preserved() {
   assert_eq "false" "$(jq '.autoMemoryEnabled' "$H/dots/settings.json")" "merge written through the link"
 }
 
+test_skills_installed_as_skill_md() {
+  echo "case: every shipped skill is installed as <name>/SKILL.md"
+  new_home
+  run_setup
+  local d n missing=""
+  for d in "$REPO"/skills/*/; do
+    n="$(basename "$d")"
+    [[ -f "$H/.claude/skills/$n/SKILL.md" ]] || missing="$missing $n"
+  done
+  assert_eq "" "$missing" "no skill missing its SKILL.md"
+  [[ -d "$H/.claude/skills/audit/references" ]] && _pass "skill subdirectories copied" || _fail "audit/references not copied"
+}
+
+test_skills_legacy_layout_cleaned() {
+  echo "case: legacy <name>/<name>.md is backed up and removed; edited skill files are backed up"
+  new_home
+  mkdir -p "$H/.claude/skills/recall" "$H/.claude/skills/audit/references"
+  printf 'old recall\n' > "$H/.claude/skills/recall/recall.md"
+  printf 'my edit\n' > "$H/.claude/skills/audit/references/trends.md"
+  run_setup
+  [[ -e "$H/.claude/skills/recall/recall.md" ]] && _fail "legacy recall.md removed" || _pass "legacy recall.md removed"
+  local b
+  b="$(find "$H/.claude/backups" -mindepth 1 -maxdepth 1 -type d | head -1)"
+  assert_eq "old recall" "$(cat "$b/.claude/skills/recall/recall.md" 2>/dev/null)" "legacy recall.md backed up"
+  assert_eq "my edit" "$(cat "$b/.claude/skills/audit/references/trends.md" 2>/dev/null)" "edited reference file backed up"
+}
+
 count_in() { grep -c -F -- "$1" "$2" || true; }
 
 test_us2_claude_md_replace() {
@@ -332,6 +359,8 @@ test_us4_missing_claude_md_two_runs() {
 }
 
 test_symlinked_targets_preserved
+test_skills_installed_as_skill_md
+test_skills_legacy_layout_cleaned
 test_us4_run_tasks
 test_us4_headings
 test_us4_permissions

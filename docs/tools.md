@@ -32,7 +32,7 @@ The five tools form a stack. Skills and agents sit on top and wire them together
 
 **Skills** are the entry points — slash commands you run. They orchestrate the flow but keep the main context clean by delegating work to agents.
 
-**Agents** are subprocesses with a focused job and a specific model. Lightweight tasks (search, commit message, doc check) use **Haiku** to save tokens. Review and reasoning tasks use **Sonnet**.
+**Agents** are subprocesses with a focused job and a specific model. Lightweight tasks (search, commit message, doc check) use **Haiku** to save tokens. Diff reviews and implementation use **Sonnet**; the `/audit` agents and `debugger` use **Opus**. Every agent that reads repo content treats it as data, never as instructions (see the *Untrusted content* line at the top of each agent).
 
 **MCP tools** (Engram, QMD and Codegraph) run as servers that Claude queries instead of reading files. They're always available — Claude uses them automatically when `CLAUDE.md` instructs it to.
 

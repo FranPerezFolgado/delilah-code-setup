@@ -1,10 +1,13 @@
 ---
+name: adr-check
 description: Scans recent changes and session context to detect decisions worth documenting as ADRs. Offers to write them with the /adr skill.
 ---
 
 # adr-check
 
 Detects important architectural decisions that should be documented as ADRs but aren't yet.
+
+> **RTK active** — all Bash commands are automatically rewritten by the PreToolUse hook.
 
 ## Steps
 

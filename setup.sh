@@ -197,13 +197,20 @@ install_engram() {
   grep -qi engram <<< "$out" \
     || claude plugin install engram \
     || info "could not install the Engram plugin"
-  out="$(claude mcp list 2>/dev/null || true)"
+  # The plugin ships its own MCP server: registering `engram setup claude-code`
+  # as well would duplicate every mem_* tool. Only fall back when the plugin is absent.
+  out="$(claude plugin list 2>/dev/null || true)"
   if grep -qi engram <<< "$out"; then
-    ok "Engram MCP already registered"
-  elif command -v engram &>/dev/null; then
-    if engram setup claude-code; then ok "Engram MCP registered"; else info "could not register the Engram MCP"; fi
+    ok "Engram plugin installed (provides the MCP server)"
   else
-    info "engram binary missing — Engram MCP not registered"
+    out="$(claude mcp list 2>/dev/null || true)"
+    if grep -qi engram <<< "$out"; then
+      ok "Engram MCP already registered"
+    elif command -v engram &>/dev/null; then
+      if engram setup claude-code; then ok "Engram MCP registered"; else info "could not register the Engram MCP"; fi
+    else
+      info "engram binary missing — Engram MCP not registered"
+    fi
   fi
 }
 
@@ -309,10 +316,14 @@ mkdir -p "$HOME/.claude/skills"
 for skill_dir in "$REPO_DIR/skills/"/*/; do
   name=$(basename "$skill_dir")
   mkdir -p "$HOME/.claude/skills/$name"
-  for f in "$skill_dir"*.md; do
-    backup "$HOME/.claude/skills/$name/$(basename "$f")"
-    cp "$f" "$HOME/.claude/skills/$name/"
-  done
+  # Claude Code reads skills/<name>/SKILL.md; copy the whole dir (references/ etc.).
+  while IFS= read -r src; do
+    backup "$HOME/.claude/skills/$name/${src#"$skill_dir"}"
+  done < <(find "$skill_dir" -type f)
+  # Drop the pre-SKILL.md layout so a stale <name>.md can't shadow the live skill.
+  legacy="$HOME/.claude/skills/$name/$name.md"
+  if [[ -f "$legacy" ]]; then backup "$legacy"; rm "$legacy"; fi
+  cp -R "$skill_dir". "$HOME/.claude/skills/$name/"
   echo "  → $name"
 done
 ok "skills installed"

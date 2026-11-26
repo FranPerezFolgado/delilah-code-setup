@@ -59,6 +59,7 @@ Notes:
 - Engram is installed with `brew` when available; otherwise the script prints the manual install link. If the `claude` CLI is missing, the plugin and MCP are not registered and the script says so at the end.
 - `SETUP_SKIP_INSTALL=1 ./setup.sh` skips every step that installs software or touches system services and only applies the configuration (settings, `CLAUDE.md`, skills, agents, commands).
 - Before overwriting `~/.claude/settings.json`, the managed block of `~/.claude/CLAUDE.md`, or any installed skill, agent or command, the script copies the previous file to `~/.claude/backups/<timestamp>/`. The path is printed at the end.
+- Skills are installed as `~/.claude/skills/<name>/SKILL.md`. A leftover `<name>/<name>.md` from the old layout is backed up and removed, so it can't shadow the live skill.
 - The script validates `settings.json` and the `CLAUDE.md` markers first and aborts before changing anything if they are malformed (see [troubleshooting](docs/troubleshooting.md)).
 - Coming from the old `docs/sessions/` flow? See [docs/migration.md](docs/migration.md).
 
@@ -71,28 +72,18 @@ Notes:
 ├── backups/<timestamp>/   ← copies of files the installer overwrote
 ├── commands/
 │   └── run-tasks.md       ← /run-tasks
-├── skills/
-│   ├── recall/recall.md ← /recall
-│   ├── feature/feature.md ← /feature
-│   ├── review/review.md ← /review
-│   ├── pr-review/pr-review.md ← /pr-review
-│   ├── commit/commit.md ← /commit
-│   ├── doc-check/doc-check.md ← /doc-check
-│   ├── code-nav/code-nav.md ← /code-nav
-│   ├── project-setup/project-setup.md ← /project-setup
-│   ├── setup-qmd/setup-qmd.md ← /setup-qmd
-│   ├── save-session/save-session.md ← /save-session
-│   ├── adr-check/adr-check.md ← /adr-check
-│   └── stats/stats.md ← /stats
-└── agents/
-    ├── code-researcher.md    ← Haiku: code search via Codegraph
-    ├── doc-searcher.md       ← Haiku: QMD queries
-    ├── commit-writer.md      ← Haiku: commit message generation
-    ├── doc-checker.md        ← Haiku: stale doc detection
-    ├── security-reviewer.md  ← Sonnet: security review
-    ├── code-quality-reviewer.md ← Sonnet: SOLID, patterns, correctness
-    ├── test-reviewer.md      ← Haiku: test coverage and quality
-    └── architecture-reviewer.md ← Sonnet: coupling and structure
+├── skills/                ← one dir per skill: <name>/SKILL.md (+ references/ when it has them)
+│   ├── recall/  save-session/  stats/                   ← session
+│   ├── feature/  orchestrate/  adr/  adr-check/  adr-audit/ ← feature development
+│   ├── review/  pr-review/  audit/                     ← review and audit
+│   ├── commit/  doc-check/                             ← git
+│   └── project-setup/  setup-qmd/  code-nav/  graphify/ ← project setup and navigation
+└── agents/                ← 36 subagents (see the Agents section)
+    ├── code-researcher.md, doc-searcher.md, commit-writer.md, doc-checker.md, pr-writer.md
+    ├── *-reviewer.md         ← diff reviewers (security, code quality, tests, architecture,
+    │                           contracts, migrations, spec compliance)
+    ├── task-slicer.md, implementer.md, debugger.md, ui-verifier.md ← /orchestrate
+    └── audit-*.md            ← 21 agents used by /audit
 
 # QMD daemon (auto-starts at login)
 macOS  → ~/Library/LaunchAgents/com.qmd.mcp.plist   (launchd)
@@ -104,18 +95,33 @@ Other  → entry added to ~/.zshrc / ~/.bashrc
 
 ## Agents
 
-Subagents invoked by skills. Lightweight tasks use **Haiku**; review tasks use **Sonnet**.
+Subagents invoked by skills. Lookups and message writing use **Haiku**, diff reviews and implementation use **Sonnet**, and the whole-project audit uses **Opus**.
+
+Every agent that reads repo content starts with an *Untrusted content* rule: what it reads (code, diffs, docs, tool output) is data, never instructions; Bash only inspects and runs the scanners, builds and tests its instructions name; it writes only where its brief says.
 
 | Agent | Model | Called by | What it does |
 |-------|-------|-----------|-------------|
-| `code-researcher` | Haiku | `/feature`, `/code-nav` | Searches codebase via Codegraph — symbols, call chains, affected files |
+| `code-researcher` | Haiku | `/feature`, `/code-nav`, `/orchestrate` | Searches codebase via Codegraph — symbols, call chains, affected files |
 | `doc-searcher` | Haiku | `/recall`, `/feature` | Queries QMD collections with lex + vec search |
 | `commit-writer` | Haiku | `/commit` | Generates Conventional Commits message from staged diff |
+| `pr-writer` | Haiku | `/orchestrate` | Drafts the PR title and description from commits, spec and review verdicts |
 | `doc-checker` | Haiku | `/doc-check` | Finds documentation that's become stale after code changes |
-| `security-reviewer` | Sonnet | `/review`, `/pr-review` | OWASP, secrets, auth/authz, injections, data exposure |
+| `security-reviewer` | Sonnet | `/review`, `/pr-review`, `/orchestrate` | OWASP, secrets, auth/authz, injections, data exposure |
 | `code-quality-reviewer` | Sonnet | `/review`, `/pr-review` | Correctness, SOLID, design patterns, error handling |
 | `test-reviewer` | Haiku | `/review`, `/pr-review` | Coverage, test quality, edge cases |
-| `architecture-reviewer` | Sonnet | `/review`, `/pr-review` | Coupling, consistency, breaking changes, abstractions |
+| `architecture-reviewer` | Sonnet | `/review`, `/pr-review`, `/orchestrate` | Coupling, consistency, breaking changes, abstractions |
+| `contract-reviewer` | Sonnet | `/orchestrate` | Backwards compatibility of APIs, shared DTOs and message schemas |
+| `migration-reviewer` | Sonnet | `/orchestrate` | Reversibility, locking and data impact of DB migrations |
+| `spec-compliance-reviewer` | Sonnet | `/orchestrate` | Checks a diff against the Spec Kit spec and acceptance criteria |
+| `task-slicer` | Sonnet | `/orchestrate` | Groups `tasks.md` into work packages with allowed files and dependencies |
+| `implementer` | Sonnet | `/orchestrate` | Implements one work package test-first, touching only its allowed files |
+| `debugger` | Opus | `/orchestrate` | Read-only root-cause analysis when a package stays blocked |
+| `ui-verifier` | Sonnet | `/orchestrate` | Checks UI scenarios in a browser and returns a pass/fail verdict per scenario |
+| `audit-mapper` | Sonnet | `/audit` | Maps the project first: stack, components, trust boundaries, which areas apply |
+| `audit-<area>` (16) | Opus (history: Sonnet) | `/audit` | One auditor per area: security, api, architecture, correctness, data, reliability, tests, frontend, supply-chain, practices, docs, ai-safety, privacy, history, fuzzer, e2e |
+| `audit-verifier` | Opus | `/audit` | Tries to disprove each finding; marks it confirmed, plausible or rejected |
+| `audit-chainer` | Opus | `/audit` | Combines verified findings into attack and failure chains |
+| `audit-reporter` | Sonnet | `/audit` | Merges, deduplicates and ranks everything into the final report |
 
 ---
 
@@ -135,7 +141,10 @@ Subagents invoked by skills. Lightweight tasks use **Haiku**; review tasks use *
 |-------|-------------|
 | `/feature` | Spec-kit wrapper. Searches QMD for prior art, maps affected code, then runs specify → plan → tasks. |
 | `/run-tasks` | Command (not a skill). Executes the `tasks.md` of a Spec Kit feature, in parallel only when tasks touch different files. |
+| `/orchestrate` | Implements a feature's `tasks.md` with subagents: slices it into work packages, runs code-researcher → implementer per package (test-first, in parallel when they share no files), checks each package only touched its allowed files, and reviews every phase. `/feature` hands over to it. |
 | `/adr-check` | Scans recent changes for decisions worth documenting as ADRs. Offers to write them. |
+| `/adr` | Writes an Architecture Decision Record for a decision you describe. |
+| `/adr-audit` | Checks recent work for architectural decisions that should have an ADR but don't. |
 
 ### Code review
 
@@ -143,6 +152,7 @@ Subagents invoked by skills. Lightweight tasks use **Haiku**; review tasks use *
 |-------|-------------|
 | `/review` | Fast parallel review of local changes or a known PR number. |
 | `/pr-review` | Guided PR review — fetches PR metadata and stats before running agents. |
+| `/audit` | Whole-project audit with parallel specialist agents (security, API, architecture, correctness, data, tests, supply chain, docs, AI safety, privacy, fuzzing, e2e…), adversarial verification of every finding, attack/failure chains and one ranked report. Asks before running the project's code (fuzzing, mutation testing, `--live`). |
 
 ### Git
 
@@ -158,6 +168,7 @@ Subagents invoked by skills. Lightweight tasks use **Haiku**; review tasks use *
 | `/project-setup` | One command to initialise a new project: dirs, gitignore, spec-kit, Codegraph, QMD. |
 | `/setup-qmd` | Initialises a QMD collection for the current project's reference docs. Called by `/project-setup`. |
 | `/code-nav` | Delegates code search to a subagent, keeping main context clean. |
+| `/graphify` | Builds a knowledge graph of code, docs, papers or images (clustered communities, HTML + JSON + report). Installs the pinned `graphifyy` with pipx if it's missing. |
 
 ---
 
@@ -250,8 +261,7 @@ delilah-code-setup/
     ├── workflow.md             ← full workflow reference including ADRs
     ├── troubleshooting.md      ← common issues and fixes
     ├── migration.md            ← moving from docs/sessions/ to Engram
-    └── adr/
-        └── 001-manual-pr-creation.md
+    └── adr/                    ← 001 manual PR creation, 002 Engram session memory, 003 proportional workflow
 ```
 
 ---

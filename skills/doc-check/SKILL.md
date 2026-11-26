@@ -1,4 +1,5 @@
 ---
+name: doc-check
 description: Detects outdated documentation after changes on the current branch.
 ---
 
