@@ -175,7 +175,7 @@ engram export [file]
 engram import <file>
 ```
 
-**Config files.** Before the installer overwrites `~/.claude/settings.json`, the managed block of `~/.claude/CLAUDE.md`, or an installed skill, agent or command, it copies the previous file to `~/.claude/backups/<timestamp>/` (same path relative to `$HOME`). The path is printed at the end of the run. To restore, copy the files back from that folder.
+**Config files.** Before the installer changes or removes any file in your HOME (settings, MCP config, hooks, `CLAUDE.md`, Codex `AGENTS.md`, or an installed skill, agent or rule, for every agent), it copies the previous file to `~/.claude/backups/<timestamp>/` (same path relative to `$HOME`). The path is printed at the end of the run. To restore, copy the files back from that folder.
 
 Restoring a whole `~/.claude/backups/<timestamp>/` also undoes that run's `rtk init` changes to `settings.json`, because the backup holds the file as it was before the run.
 
@@ -185,15 +185,15 @@ Restoring a whole `~/.claude/backups/<timestamp>/` also undoes that run's `rtk i
 
 **Symptom:** `./setup.sh` stops early with one of:
 
-- `~/.claude/settings.json is not a valid JSON object — fix or remove it and re-run (nothing was changed)`
-- `~/.claude/CLAUDE.md has unbalanced or duplicate fran-setup markers — fix them by hand and re-run (nothing was changed)`
+- `<file> is not a valid JSON object — fix or remove it and re-run (nothing was changed)` — any JSON file it merges into: `~/.claude/settings.json`, `~/.claude.json`, `~/.gemini/config/{mcp_config,hooks}.json`, `~/.gemini/antigravity-cli/settings.json`, `~/.codex/hooks.json`
+- `~/.claude/CLAUDE.md` or `~/.codex/AGENTS.md has unbalanced or duplicate fran-setup markers — fix them by hand and re-run (nothing was changed)`
 - `jq is required but not installed` / `curl is required but not installed`
 
 These checks run before any write, so nothing was modified.
 
 **Fix:**
-- `settings.json`: validate with `jq . ~/.claude/settings.json`, fix the syntax error (or restore a copy from `~/.claude/backups/`), then re-run.
-- `CLAUDE.md`: the managed block must be exactly one `<!-- fran-setup:start -->` line followed by one `<!-- fran-setup:end -->` line. Remove the duplicate or orphan marker, then re-run.
+- JSON: validate with `jq . <file>`, fix the syntax error (or restore a copy from `~/.claude/backups/`), then re-run.
+- `CLAUDE.md` / `AGENTS.md`: the managed block must be exactly one `<!-- fran-setup:start -->` line followed by one `<!-- fran-setup:end -->` line. Remove the duplicate or orphan marker, then re-run.
 - Missing `jq` or `curl`: install it and re-run.
 
 ---
@@ -238,3 +238,27 @@ Then re-run `/project-setup` — it will only add the missing entries.
 ```
 
 Shows RTK savings, QMD collections, and Codegraph status. Flags any detected gaps with the fix command.
+
+---
+
+## Antigravity or Codex not set up
+
+**Symptom:** `./setup.sh` prints `Antigravity not found — skipping it` or `Codex not found — skipping it`.
+
+`--all` only includes them when `agy`/`codex` is on PATH or `~/.gemini`/`~/.codex` exists. Force it with `./setup.sh --antigravity` or `--codex`.
+
+Check after a restart: `agy agents`, `agy mcp list`; in Codex, `/mcp`.
+
+---
+
+## Codex: "merge ~/.codex/config.delilah.toml by hand"
+
+Your `~/.codex/config.toml` already existed, so the installer didn't touch it (it is TOML with your own settings). The generated one is in `~/.codex/config.delilah.toml`: copy its `[mcp_servers.*]` and `[permissions.rulesync*]` tables, and `default_permissions = "rulesync"`, into your `config.toml`. The warning comes back while the two differ.
+
+---
+
+## rulesync generate failed
+
+**Symptom:** `rulesync generate failed — nothing was changed`, with rulesync's output above it.
+
+Usually a syntax error in `.rulesync/` (a `.jsonc` file or a frontmatter block). Fix it and re-run. `rulesync --version` must work; install it with `brew install rulesync` or `npm i -g rulesync`.

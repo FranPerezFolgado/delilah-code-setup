@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 # =============================================================
-#  delilah-code-setup — Claude Code dev toolchain installer
-#  Run from the repo root: ./setup.sh
+#  delilah-code-setup — agent setup installer
+#  Run from the repo root: ./setup.sh [--claude] [--antigravity] [--codex] [--all]
 #  Supports: macOS, Linux
+#
+#  The source is .rulesync/. rulesync generates each agent's files into a
+#  staging HOME, and this script merges them into the real one: rulesync
+#  itself replaces whole files (MCP servers, permissions, rules), which would
+#  drop what you added by hand.
 # =============================================================
 
 set -euo pipefail
@@ -12,7 +17,40 @@ OS="$(uname -s)"
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 ok()   { printf '%b✓%b %s\n' "$GREEN" "$NC" "$1"; }
 info() { printf '%b→%b %s\n' "$YELLOW" "$NC" "$1"; }
+warn() { printf '%b⚠%b %s\n' "$YELLOW" "$NC" "$1"; }
 err()  { printf '%b✗%b %s\n' "$RED" "$NC" "$1" >&2; exit 1; }
+
+usage() {
+  cat <<'EOF'
+Usage: ./setup.sh [--claude] [--antigravity] [--codex] [--all]
+
+  --claude       Claude Code (~/.claude)
+  --antigravity  Antigravity CLI, agy (~/.gemini)
+  --codex        Codex CLI (~/.codex, ~/.agents)
+  --all          Claude Code, plus Antigravity and Codex when they are
+                 installed (agy/codex on PATH, or ~/.gemini / ~/.codex exists).
+                 This is the default.
+EOF
+}
+
+# ── Targets ───────────────────────────────────────────────────
+DO_CLAUDE=0; DO_AGY=0; DO_CODEX=0; ALL=0
+[[ $# -eq 0 ]] && ALL=1
+for arg in "$@"; do
+  case "$arg" in
+    --claude)      DO_CLAUDE=1 ;;
+    --antigravity) DO_AGY=1 ;;
+    --codex)       DO_CODEX=1 ;;
+    --all)         ALL=1 ;;
+    -h|--help)     usage; exit 0 ;;
+    *)             usage >&2; err "unknown option: $arg" ;;
+  esac
+done
+if [[ "$ALL" == "1" ]]; then
+  DO_CLAUDE=1
+  if command -v agy &>/dev/null || [[ -d "$HOME/.gemini" ]]; then DO_AGY=1; else info "Antigravity not found — skipping it (use --antigravity to force)"; fi
+  if command -v codex &>/dev/null || [[ -d "$HOME/.codex" ]]; then DO_CODEX=1; else info "Codex not found — skipping it (use --codex to force)"; fi
+fi
 
 # ── Install guard ─────────────────────────────────────────────
 # SETUP_SKIP_INSTALL=1 skips every step that installs software or touches
@@ -45,18 +83,25 @@ backup() {
   BACKED_UP="${BACKED_UP}|$file|"
 }
 
+TARGET_NAMES=""
+[[ "$DO_CLAUDE" == "1" ]] && TARGET_NAMES+=" claude"
+[[ "$DO_AGY" == "1" ]] && TARGET_NAMES+=" antigravity"
+[[ "$DO_CODEX" == "1" ]] && TARGET_NAMES+=" codex"
+[[ -n "$TARGET_NAMES" ]] || err "no target selected"
+
 echo ""
 echo "╔══════════════════════════════════════════╗"
 echo "║   delilah-code-setup                     ║"
 echo "║   rtk · qmd · codegraph · spec-kit       ║"
-echo "║   engram                                 ║"
+echo "║   engram · rulesync                      ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
 echo "  OS: $OS"
+echo "  Targets:$TARGET_NAMES"
 echo ""
 
 # ── Preflight ─────────────────────────────────────────────────
-# Runs before any write. Fails fast, naming the missing tool.
+# Runs before any write. Fails fast, naming the missing tool or the bad file.
 for tool in jq curl; do
   command -v "$tool" >/dev/null 2>&1 || err "$tool is required but not installed — install it and re-run"
 done
@@ -74,12 +119,30 @@ check_markers() {
     END { print ((ns == ne && !bad) ? "ok" : "bad") }' "$1"
 }
 
-if [[ -f "$CLAUDE_SETTINGS" ]]; then
-  jq -e 'type == "object"' "$CLAUDE_SETTINGS" >/dev/null 2>&1 \
-    || err "$CLAUDE_SETTINGS is not a valid JSON object — fix or remove it and re-run (nothing was changed)"
+# check_json <file>: an existing, non-empty file we merge into must be a JSON object.
+check_json() {
+  [[ -s "$1" ]] || return 0
+  jq -e 'type == "object"' "$1" >/dev/null 2>&1 \
+    || err "$1 is not a valid JSON object — fix or remove it and re-run (nothing was changed)"
+}
+
+if [[ "$DO_CLAUDE" == "1" ]]; then
+  check_json "$CLAUDE_SETTINGS"
+  check_json "$HOME/.claude.json"
+  if [[ -f "$CLAUDE_MD" && "$(check_markers "$CLAUDE_MD")" != "ok" ]]; then
+    err "$CLAUDE_MD has unbalanced or duplicate fran-setup markers — fix them by hand and re-run (nothing was changed)"
+  fi
 fi
-if [[ -f "$CLAUDE_MD" && "$(check_markers "$CLAUDE_MD")" != "ok" ]]; then
-  err "$CLAUDE_MD has unbalanced or duplicate fran-setup markers — fix them by hand and re-run (nothing was changed)"
+if [[ "$DO_AGY" == "1" ]]; then
+  check_json "$HOME/.gemini/config/mcp_config.json"
+  check_json "$HOME/.gemini/config/hooks.json"
+  check_json "$HOME/.gemini/antigravity-cli/settings.json"
+fi
+if [[ "$DO_CODEX" == "1" ]]; then
+  check_json "$HOME/.codex/hooks.json"
+  if [[ -f "$HOME/.codex/AGENTS.md" && "$(check_markers "$HOME/.codex/AGENTS.md")" != "ok" ]]; then
+    err "$HOME/.codex/AGENTS.md has unbalanced or duplicate fran-setup markers — fix them by hand and re-run (nothing was changed)"
+  fi
 fi
 
 # ── Prerequisites ─────────────────────────────────────────────
@@ -215,85 +278,174 @@ install_engram() {
 }
 
 printf '\n%s\n' "── Engram ──"
-run_install install_engram
+if [[ "$DO_CLAUDE" == "1" ]]; then
+  run_install install_engram
+elif ! command -v engram &>/dev/null; then
+  info "engram not found — install it: brew install gentleman-programming/tap/engram"
+fi
 
-printf '\n%s\n' "── RTK hook ──"
-run_install init_rtk_hook
+install_rulesync() {
+  if command -v rulesync &>/dev/null; then
+    ok "rulesync already installed ($(rulesync --version 2>/dev/null || echo 'unknown version'))"
+  elif command -v brew &>/dev/null; then
+    info "Installing rulesync via brew..."
+    brew install rulesync && ok "rulesync installed"
+  else
+    info "Installing rulesync via npm..."
+    npm install -g rulesync && ok "rulesync installed"
+  fi
+}
 
-# ── 6. MCP servers + permissions in ~/.claude/settings.json ───
-# merge_settings: contracts/settings-merge.md. Backs up, merges via temp file + mv.
-merge_settings() {
-  local tpl="$REPO_DIR/config/settings.template.json" tmp
-  mkdir -p "$HOME/.claude"
-  if [[ ! -f "$CLAUDE_SETTINGS" ]]; then
-    cp "$tpl" "$CLAUDE_SETTINGS"
-    ok "settings.json created from template"
+printf '\n%s\n' "── rulesync ──"
+run_install install_rulesync
+command -v rulesync &>/dev/null || err "rulesync is required but not installed — brew install rulesync (or npm i -g rulesync) and re-run"
+
+# ── Generate into a staging HOME ──────────────────────────────
+printf '\n%s\n' "── Generate ──"
+STAGE="$(mktemp -d)"
+trap 'rm -rf "$STAGE"' EXIT
+RS_TARGETS=""
+[[ "$DO_CLAUDE" == "1" ]] && RS_TARGETS+=",claudecode"
+[[ "$DO_AGY" == "1" ]] && RS_TARGETS+=",antigravity-cli"
+[[ "$DO_CODEX" == "1" ]] && RS_TARGETS+=",codexcli"
+gen_log="$STAGE.log"
+if ! (cd "$REPO_DIR" && HOME="$STAGE" rulesync generate --global --targets "${RS_TARGETS#,}" --features '*') >"$gen_log" 2>&1; then
+  cat "$gen_log" >&2; rm -f "$gen_log"
+  err "rulesync generate failed — nothing was changed"
+fi
+# Show rulesync's warnings. The per-rule agy notices about ** globs become one line.
+grep -iE 'warn|deprecat|ignored' "$gen_log" | grep -v 'Antigravity CLI permissions: skipping' | sed 's/^/  /' || true
+if grep -q 'Antigravity CLI permissions: skipping' "$gen_log"; then
+  warn "Antigravity does not get the ** file denies (.env, *.pem, *.key, secrets/): agy can read those files"
+fi
+rm -f "$gen_log"
+
+# Every path we read from the staging HOME must exist, or a rulesync release
+# changed its layout: stop before writing anything.
+REQUIRED=()
+[[ "$DO_CLAUDE" == "1" ]] && REQUIRED+=(.claude/agents .claude/skills .claude/rules .claude/settings.json .claude.json)
+[[ "$DO_AGY" == "1" ]] && REQUIRED+=(.gemini/config/agents .gemini/config/rules .gemini/antigravity-cli/skills .gemini/config/mcp_config.json .gemini/config/hooks.json .gemini/antigravity-cli/settings.json)
+[[ "$DO_CODEX" == "1" ]] && REQUIRED+=(.codex/agents .codex/rules .agents/skills .codex/hooks.json .codex/AGENTS.md .codex/config.toml)
+for p in "${REQUIRED[@]}"; do
+  [[ -e "$STAGE/$p" ]] || err "rulesync $(rulesync --version 2>/dev/null) did not generate ~/$p — its output layout changed; nothing was changed"
+done
+
+# rulesync expands ~ against the staging HOME; point those paths at the real one.
+# Only config files carry them. The resolved form (/private/var on macOS) goes
+# first, as it contains the other. Patterns and replacement are escaped for sed.
+sed_esc() { printf '%s' "$1" | sed 's/[][\\.*^$|&/]/\\&/g'; }
+STAGE_REAL="$(cd "$STAGE" && pwd -P)"
+rx_real="$(sed_esc "$STAGE_REAL")"; rx_stage="$(sed_esc "$STAGE")"; rx_home="$(sed_esc "$HOME")"
+while IFS= read -r f; do
+  sed -e "s|$rx_real|$rx_home|g" -e "s|$rx_stage|$rx_home|g" "$f" > "$STAGE/.rewrite"
+  cat "$STAGE/.rewrite" > "$f"
+done < <(grep -rlF -e "$STAGE" -e "$STAGE_REAL" --include='*.json' --include='*.toml' --include='*.rules' "$STAGE" || true)
+rm -f "$STAGE/.rewrite"
+ok "generated for:$TARGET_NAMES"
+
+# ── Merge helpers ─────────────────────────────────────────────
+# install_file <rel>: copy $STAGE/<rel> over $HOME/<rel> when it differs,
+# backing up the old copy. Prints the name when it changed.
+install_file() {
+  local src="$STAGE/$1" dest="$HOME/$1"
+  if [[ -f "$dest" ]] && cmp -s "$src" "$dest"; then return 0; fi
+  backup "$dest"
+  mkdir -p "$(dirname "$dest")"
+  if [[ -f "$dest" ]]; then cat "$src" > "$dest"; else cp "$src" "$dest"; fi
+  echo "  → $1"
+}
+
+# install_tree <rel dir>: install_file every file rulesync generated under it.
+# Files you added there yourself are left alone.
+install_tree() {
+  [[ -d "$STAGE/$1" ]] || return 0
+  local f
+  while IFS= read -r f; do
+    install_file "${f#"$STAGE"/}"
+  done < <(find "$STAGE/$1" -type f | sort)
+}
+
+# merge_json <rel> <jq filter file>: merge the generated file into the user's
+# (filter gets it as $tpl). Creates it when missing or empty; writes through the
+# path so symlinks and modes survive.
+merge_json() {
+  local src="$STAGE/$1" dest="$HOME/$1" filter="$2" tmp before
+  [[ -f "$src" ]] || return 0
+  mkdir -p "$(dirname "$dest")"
+  if [[ ! -s "$dest" ]]; then
+    backup "$dest"
+    if [[ -e "$dest" ]]; then cat "$src" > "$dest"; else cp "$src" "$dest"; fi
+    ok "$1 created"
     return 0
   fi
-  tmp="$(mktemp "$HOME/.claude/settings.json.XXXXXX")"
-  if ! jq --indent 2 --slurpfile tpl "$tpl" -f "$REPO_DIR/config/merge-settings.jq" "$CLAUDE_SETTINGS" > "$tmp"; then
+  before="$(cksum < "$dest")"
+  tmp="$(mktemp "$STAGE/merge.XXXXXX")"
+  if ! jq --indent 2 --slurpfile tpl "$src" -f "$filter" "$dest" > "$tmp"; then
     rm -f "$tmp"
-    err "settings merge failed — $CLAUDE_SETTINGS left untouched"
+    err "merge of $1 failed — $dest left untouched"
   fi
-  if cmp -s "$tmp" "$CLAUDE_SETTINGS"; then
+  # Compare content, not bytes: rewriting a file only to reformat it (e.g.
+  # ~/.claude.json, which Claude Code updates constantly) is a needless race.
+  if cmp -s <(jq -S . "$tmp") <(jq -S . "$dest"); then
     rm -f "$tmp"
-    ok "settings.json already up to date"
+    ok "$1 already up to date"
     return 0
   fi
-  backup "$CLAUDE_SETTINGS"
-  # Write through the path (not mv) so a symlinked file and its mode survive.
-  cat "$tmp" > "$CLAUDE_SETTINGS"
+  # A running agent may have rewritten the file meanwhile (~/.claude.json): don't drop its change.
+  [[ "$(cksum < "$dest")" == "$before" ]] || err "$dest changed while merging — close the agent and re-run (later files not changed)"
+  backup "$dest"
+  cat "$tmp" > "$dest"
   rm -f "$tmp"
-  ok "settings.json merged"
+  ok "$1 merged"
 }
 
-printf '\n%s\n' "── MCP servers + permissions ──"
-merge_settings
-
-# ── 7. CLAUDE.md ──────────────────────────────────────────────
-# shipped_block: the fran-setup block from config/CLAUDE.md (start..end inclusive).
-shipped_block() {
-  awk -v s="$MD_START" -v e="$MD_END" '$0 == s { on = 1 } on { print } $0 == e { on = 0 }' "$REPO_DIR/config/CLAUDE.md"
-}
-
-# manage_claude_md: create, append or replace the managed block; never touches
-# text outside the markers. Backs up before writing.
-manage_claude_md() {
-  local src="$REPO_DIR/config/CLAUDE.md" block tmp blockfile
-  mkdir -p "$HOME/.claude"
-  if [[ ! -f "$CLAUDE_MD" ]]; then
-    cp "$src" "$CLAUDE_MD"
-    ok "CLAUDE.md installed"
+# set_block <file> <block file>: replace the fran-setup block in <file> with the
+# contents of <block file> (markers included), append it when absent, or remove
+# it when <block file> is empty. Text outside the markers is never touched.
+set_block() {
+  local file="$1" blockfile="$2" tmp
+  if [[ ! -f "$file" ]]; then
+    [[ -s "$blockfile" ]] || return 0
+    mkdir -p "$(dirname "$file")"
+    cp "$blockfile" "$file"
+    ok "${file#"$HOME"/} created"
     return 0
   fi
-  block="$(shipped_block)"
-  [[ -n "$block" ]] || err "managed block markers not found in $src — $CLAUDE_MD left untouched"
-  tmp="$(mktemp "$HOME/.claude/CLAUDE.md.XXXXXX")"
-  blockfile="$(mktemp)"
-  printf '%s\n' "$block" > "$blockfile"
-  if grep -qxF "$MD_START" "$CLAUDE_MD"; then
+  tmp="$(mktemp "$STAGE/block.XXXXXX")"
+  if grep -qxF "$MD_START" "$file"; then
     awk -v s="$MD_START" -v e="$MD_END" -v bf="$blockfile" '
       $0 == s { while ((getline l < bf) > 0) print l; skip = 1; next }
       skip && $0 == e { skip = 0; next }
-      !skip { print }' "$CLAUDE_MD" > "$tmp"
+      !skip { print }' "$file" > "$tmp"
+  elif [[ -s "$blockfile" ]]; then
+    { cat "$file"; printf '\n'; cat "$blockfile"; } > "$tmp"
   else
-    { cat "$CLAUDE_MD"; printf '\n'; cat "$blockfile"; } > "$tmp"
+    cp "$file" "$tmp"
   fi
-  rm -f "$blockfile"
-  if cmp -s "$tmp" "$CLAUDE_MD"; then
+  if cmp -s "$tmp" "$file"; then
     rm -f "$tmp"
-    ok "CLAUDE.md already up to date"
+    ok "${file#"$HOME"/} already up to date"
     return 0
   fi
-  backup "$CLAUDE_MD"
-  cat "$tmp" > "$CLAUDE_MD"
+  backup "$file"
+  cat "$tmp" > "$file"
   rm -f "$tmp"
-  ok "CLAUDE.md block updated"
+  ok "${file#"$HOME"/} block updated"
 }
 
-# warn_stale_text: report session-memory text outside the markers (never edited).
+# remove_legacy <file>: back up and delete a file an older setup installed.
+remove_legacy() {
+  [[ -f "$1" ]] || return 0
+  backup "$1"
+  rm "$1"
+  info "removed legacy ${1#"$HOME"/} (backed up)"
+}
+
+# ── Claude Code ───────────────────────────────────────────────
+# warn_stale_text: report session-memory text in CLAUDE.md outside the markers (never edited).
 STALE_WARNED=0
 warn_stale_text() {
+  [[ -f "$CLAUDE_MD" ]] || return 0
   local hits
   hits="$(awk -v s="$MD_START" -v e="$MD_END" '
     $0 == s { inb = 1; next }
@@ -302,56 +454,94 @@ warn_stale_text() {
   [[ -z "$hits" ]] && return 0
   STALE_WARNED=1
   while IFS= read -r l; do
-    printf '%b⚠%b stale session-memory instructions outside fran-setup block: %s\n' "$YELLOW" "$NC" "$l"
+    warn "stale session-memory instructions outside fran-setup block: $l"
   done <<< "$hits"
 }
 
-printf '\n%s\n' "── CLAUDE.md ──"
-manage_claude_md
-warn_stale_text
-
-# ── 8. Skills ─────────────────────────────────────────────────
-printf '\n%s\n' "── Skills ──"
-mkdir -p "$HOME/.claude/skills"
-for skill_dir in "$REPO_DIR/skills/"/*/; do
-  name=$(basename "$skill_dir")
-  mkdir -p "$HOME/.claude/skills/$name"
-  # Claude Code reads skills/<name>/SKILL.md; copy the whole dir (references/ etc.).
-  while IFS= read -r src; do
-    backup "$HOME/.claude/skills/$name/${src#"$skill_dir"}"
-  done < <(find "$skill_dir" -type f)
+install_claude() {
+  printf '\n%s\n' "── Claude Code ──"
+  install_tree .claude/agents
+  install_tree .claude/skills
+  install_tree .claude/rules
   # Drop the pre-SKILL.md layout so a stale <name>.md can't shadow the live skill.
-  legacy="$HOME/.claude/skills/$name/$name.md"
-  if [[ -f "$legacy" ]]; then backup "$legacy"; rm "$legacy"; fi
-  cp -R "$skill_dir". "$HOME/.claude/skills/$name/"
-  echo "  → $name"
-done
-ok "skills installed"
+  local d name
+  for d in "$STAGE/.claude/skills"/*/; do
+    name="$(basename "$d")"
+    remove_legacy "$HOME/.claude/skills/$name/$name.md"
+  done
+  # run-tasks used to be a command; it is a skill now.
+  remove_legacy "$HOME/.claude/commands/run-tasks.md"
+  merge_json .claude/settings.json "$REPO_DIR/config/merge-settings.jq"
+  merge_json .claude.json "$REPO_DIR/config/merge-json.jq"
+  # The rules now live in ~/.claude/rules/delilah.md: drop the block older
+  # versions put in CLAUDE.md so they aren't loaded twice.
+  local empty; empty="$(mktemp "$STAGE/empty.XXXXXX")"
+  set_block "$CLAUDE_MD" "$empty"
+  rm -f "$empty"
+  warn_stale_text
+  run_install init_rtk_hook
+}
 
-# ── 9. Agents ─────────────────────────────────────────────────
-printf '\n%s\n' "── Agents ──"
-mkdir -p "$HOME/.claude/agents"
-for agent in "$REPO_DIR/agents/"*.md; do
-  name=$(basename "$agent")
-  backup "$HOME/.claude/agents/$name"
-  cp "$agent" "$HOME/.claude/agents/$name"
-  echo "  → $name"
-done
-ok "agents installed"
+# ── Antigravity ───────────────────────────────────────────────
+install_agy() {
+  printf '\n%s\n' "── Antigravity ──"
+  install_tree .gemini/config/agents
+  install_tree .gemini/config/rules
+  install_tree .gemini/antigravity-cli/skills
+  merge_json .gemini/config/mcp_config.json "$REPO_DIR/config/merge-json.jq"
+  merge_json .gemini/antigravity-cli/settings.json "$REPO_DIR/config/merge-json.jq"
+  # rulesync owns the "rulesync" hook set in hooks.json; other sets stay as they are.
+  merge_json .gemini/config/hooks.json "$REPO_DIR/config/merge-hookset.jq"
+  run_install init_rtk_agy
+}
 
-# ── 9b. Commands ──────────────────────────────────────────────
-printf '\n%s\n' "── Commands ──"
-mkdir -p "$HOME/.claude/commands"
-for cmd in "$REPO_DIR/commands/"*.md; do
-  [ -e "$cmd" ] || continue
-  name=$(basename "$cmd")
-  backup "$HOME/.claude/commands/$name"
-  cp "$cmd" "$HOME/.claude/commands/$name"
-  echo "  → $name"
-done
-ok "commands installed"
+init_rtk_agy() {
+  command -v rtk &>/dev/null || return 0
+  if rtk init -g --agent antigravity --auto-patch </dev/null >/dev/null 2>&1; then ok "RTK plugin configured for Antigravity"; else info "could not configure the RTK plugin for Antigravity"; fi
+}
 
-# ── 9. QMD daemon ─────────────────────────────────────────────
+# ── Codex ─────────────────────────────────────────────────────
+CODEX_CONFIG_DIFF=0
+install_codex() {
+  printf '\n%s\n' "── Codex ──"
+  install_tree .codex/agents
+  install_tree .codex/rules
+  install_tree .agents/skills
+  merge_json .codex/hooks.json "$REPO_DIR/config/merge-json.jq"
+  # Codex reads one AGENTS.md: keep ours in a managed block.
+  local blockfile; blockfile="$(mktemp "$STAGE/block.XXXXXX")"
+  { echo "$MD_START"; cat "$STAGE/.codex/AGENTS.md"; echo "$MD_END"; } > "$blockfile"
+  set_block "$HOME/.codex/AGENTS.md" "$blockfile"
+  rm -f "$blockfile"
+  # config.toml is TOML and holds the user's own settings: create it, never rewrite it.
+  if [[ ! -f "$HOME/.codex/config.toml" ]]; then
+    install_file .codex/config.toml
+  elif ! cmp -s "$STAGE/.codex/config.toml" "$HOME/.codex/config.toml"; then
+    # Warn loudly only when what we ship changed since the last run; after that a
+    # quiet reminder, so a config merged by hand doesn't warn forever.
+    if cmp -s "$STAGE/.codex/config.toml" "$HOME/.codex/config.delilah.toml"; then
+      info "Codex: config.toml still differs from config.delilah.toml (unchanged since last run)"
+    else
+      cp "$STAGE/.codex/config.toml" "$HOME/.codex/config.delilah.toml"
+      CODEX_CONFIG_DIFF=1
+      # shellcheck disable=SC2088  # literal ~ for display
+      warn "~/.codex/config.toml exists and was left untouched; merge MCP servers and permissions from ~/.codex/config.delilah.toml by hand"
+    fi
+  fi
+  run_install init_rtk_codex
+}
+
+init_rtk_codex() {
+  command -v rtk &>/dev/null || return 0
+  if rtk init -g --codex </dev/null >/dev/null 2>&1; then ok "RTK hook configured for Codex"; else info "could not configure the RTK hook for Codex"; fi
+}
+
+[[ "$DO_CLAUDE" == "1" ]] && install_claude
+[[ "$DO_AGY" == "1" ]] && install_agy
+[[ "$DO_CODEX" == "1" ]] && install_codex
+
+
+# ── QMD daemon ────────────────────────────────────────────────
 printf '\n%s\n' "── QMD daemon ──"
 setup_qmd_daemon() {
   QMD_BIN=$(which qmd 2>/dev/null || echo "")
@@ -407,18 +597,26 @@ echo "║   Setup complete                         ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
 if [[ "$STALE_WARNED" == "1" ]]; then
-  printf '%b⚠%b stale session-memory text found in ~/.claude/CLAUDE.md — see docs/migration.md\n\n' "$YELLOW" "$NC"
+  warn "stale session-memory text found in ~/.claude/CLAUDE.md — see docs/migration.md"
+  echo ""
 fi
 if [[ "$CLAUDE_MISSING" == "1" ]]; then
-  printf '%b⚠%b claude CLI not found: the Engram plugin/MCP were NOT registered. Install Claude Code and re-run ./setup.sh\n\n' "$YELLOW" "$NC"
+  warn "claude CLI not found: the Engram plugin/MCP were NOT registered. Install Claude Code and re-run ./setup.sh"
+  echo ""
+fi
+if [[ "$CODEX_CONFIG_DIFF" == "1" ]]; then
+  warn "Codex: file denies and MCP servers from this setup are NOT active until you merge ~/.codex/config.delilah.toml into ~/.codex/config.toml"
+  echo ""
 fi
 echo "Next steps:"
 echo ""
-echo "  1. Restart Claude Code"
+echo "  1. Restart the agents you set up:$TARGET_NAMES"
 echo "  2. cd into a project"
 echo "  3. /setup-qmd indexes reference docs (docs/, specs/, ADRs; sessions/ is ignored)"
 echo "  4. /recall loads context from Engram (QMD is only for docs)"
-echo "  5. Check Engram: claude mcp list | grep engram   or   engram tui"
+echo "  5. Check:  claude mcp list   ·   agy mcp list   ·   agy agents"
+echo ""
+echo "  After editing .rulesync/, re-run ./setup.sh: files are copied, not linked."
 echo ""
 if [[ -n "$BACKUP_DIR" ]]; then
   echo "Backups of overwritten files: $BACKUP_DIR"

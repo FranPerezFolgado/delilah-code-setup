@@ -1,0 +1,104 @@
+{
+  "permission": {
+    "mcp__codegraph__codegraph_search": {
+      "*": "allow"
+    },
+    "mcp__codegraph__codegraph_context": {
+      "*": "allow"
+    },
+    "mcp__codegraph__codegraph_callers": {
+      "*": "allow"
+    },
+    "mcp__codegraph__codegraph_callees": {
+      "*": "allow"
+    },
+    "mcp__codegraph__codegraph_impact": {
+      "*": "allow"
+    },
+    "mcp__codegraph__codegraph_node": {
+      "*": "allow"
+    },
+    "mcp__codegraph__codegraph_status": {
+      "*": "allow"
+    },
+    "mcp__codegraph__codegraph_files": {
+      "*": "allow"
+    },
+    "mcp__qmd__query": {
+      "*": "allow"
+    },
+    "mcp__qmd__get": {
+      "*": "allow"
+    },
+    "mcp__qmd__multi_get": {
+      "*": "allow"
+    },
+    "mcp__qmd__status": {
+      "*": "allow"
+    },
+    "mcp__engram__mem_context": {
+      "*": "allow"
+    },
+    "mcp__engram__mem_search": {
+      "*": "allow"
+    },
+    "mcp__engram__mem_get_observation": {
+      "*": "allow"
+    },
+    "mcp__engram__mem_current_project": {
+      "*": "allow"
+    },
+    "mcp__engram__mem_save": {
+      "*": "allow"
+    },
+    "mcp__engram__mem_session_summary": {
+      "*": "allow"
+    },
+    "mcp__plugin_engram_engram__mem_context": {
+      "*": "allow"
+    },
+    "mcp__plugin_engram_engram__mem_search": {
+      "*": "allow"
+    },
+    "mcp__plugin_engram_engram__mem_get_observation": {
+      "*": "allow"
+    },
+    "mcp__plugin_engram_engram__mem_current_project": {
+      "*": "allow"
+    },
+    "mcp__plugin_engram_engram__mem_save": {
+      "*": "allow"
+    },
+    "mcp__plugin_engram_engram__mem_session_summary": {
+      "*": "allow"
+    },
+    "bash": {
+      "git branch -D *": "ask",
+      "git push *": "ask",
+      "git rebase *": "ask",
+      "git reset --hard *": "ask",
+      "rm -r *": "ask",
+      "rm -rf *": "ask"
+    },
+    "edit": {
+      "**/.env": "deny",
+      "**/.env.*": "deny",
+      "**/secrets/**": "deny",
+      "~/.ssh/**": "deny"
+    },
+    "read": {
+      "**/*.key": "deny",
+      "**/*.p12": "deny",
+      "**/*.pem": "deny",
+      "**/.env": "deny",
+      "**/.env.*": "deny",
+      "**/secrets/**": "deny",
+      "~/.aws/credentials": "deny",
+      "~/.config/gh/hosts.yml": "deny",
+      "~/.ssh/**": "deny"
+    }
+  },
+  "claudecode": {
+    "autoMemoryEnabled": false
+  }
+}
